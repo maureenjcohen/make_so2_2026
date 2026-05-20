@@ -1,6 +1,5 @@
 """
-Plotting functions for 'How long could volcanic plumes persist in the Venus atmosphere?'
-(Cohen et al. 2026).
+Old plotting functions, to be scavenged
 """
 # %%
 import xarray as xr
@@ -8,6 +7,7 @@ import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.animation as animation
 import matplotlib.dates as mdates
+from matplotlib import colors
 import pandas as pd
 
 from tools import plume_dict, max_dispersal
@@ -63,7 +63,11 @@ def marcq_reproduce(ds, save=False, window=240, min_valid_days=60,
     plt.show()
 
 # %%
-def time_series(ds, start, end, save=False, savepath='/exomars/projects/mc5526/VPCM_decadal_so2/scratch_plots/'):
+def time_series(ds, start, end,
+                save=False, savepath='/exomars/projects/mc5526/VPCM_decadal_so2/scratch_plots/'):
+    
+    """Plot time series of SO_2 at 70 km, with error bars, for a given time range.
+    Indices start=40, end=71"""
 
     # 1. Slice the dataset temporally right away to save memory and keep code DRY
     ds_sliced = ds.isel(start_date=slice(start, end))
@@ -93,7 +97,7 @@ def time_series(ds, start, end, save=False, savepath='/exomars/projects/mc5526/V
     ax1.set_title('a) Latitude-weighted SO$_2$ at 70 km', fontsize=16)
     ax1.set_ylabel('SO$_2$ / ppbv', fontsize=16)
     ax1.set_yscale('log')
-
+    
     ylim = ax1.get_ylim()  
 
     # Plot 2: Scatter of individual points
@@ -110,125 +114,74 @@ def time_series(ds, start, end, save=False, savepath='/exomars/projects/mc5526/V
     plt.subplots_adjust(hspace=0.15)
     
     if save:
-        fig.savefig(savepath+f'so2_timeseries_{start}_{end}.png', bbox_inches='tight')
+        fig.savefig(savepath+f'so2_timeseries_{start}_{end}_with_sim.png', bbox_inches='tight')
         
     plt.show()
 
 # %%
-def zmage(plobject, hmin=0, hmax=None, time_slice=-1, convert2yr=True,
-          plume_markers=None, levels=None, savepath=None,
-          save=False, sformat='png', savename='zmage.png'):
-    """
-    Plot the zonal mean age of air.
-
-    Args:
-        plobject (PlumeSim): PlumeSim object containing the data.
-        hmin (int): Minimum height index. Defaults to 0.
-        hmax (int): Maximum height index. Defaults to None.
-        time_slice (int): Time index to select. Defaults to -1.
-        convert2yr (bool): Whether to convert units to years. Defaults to True.
-        levels (list, optional): Contour levels. Defaults to None.
-        savepath (str): Directory path to save the plot. Defaults to None.
-        save (bool): Whether to save the plot. Defaults to False.
-        saveformat (str): Format to save the plot. Defaults to 'png'.
-        savename (str): Filename for the saved plot. Defaults to 'zmage.png'.
-    """
-    ageo = plobject.data['age']
-    # Select time slice
-    ageo = ageo[time_slice,:,:,:]
+def data_compare(ds, start, end, sim, plume_dict, log=True, weighted=False,
+                save=False, savepath='/exomars/projects/mc5526/VPCM_decadal_so2/scratch_plots/'):
     
-    # Calculate zonal mean
-    zmageo = np.mean(ageo, axis=-1)
+        # 1. Slice the dataset temporally right away to save memory and keep code DRY
+    ds_sliced = ds.isel(start_date=slice(start, end))
+    time_axis_mean = ds_sliced.start_date.values
 
-    if convert2yr:
-        zmageo = zmageo/(60*60*24*360)
-        cunit = 'Earth years'
-    else:
-        cunit = 'seconds'
- 
-    zmslice = zmageo[hmin:hmax,:]
+    # --- ax1: Latitude-weighted spatial mean ---
+    weights = np.cos(np.deg2rad(ds_sliced.latitude))
+    so2_weighted = ds_sliced.so2_ppbv.weighted(weights).mean(dim=['latitude', 'longitude'])
     
-    fig = plt.figure(figsize=(6, 6))
-    plt.contourf(plobject.lats, plobject.heights[hmin:hmax],
-                 zmslice,
-                 levels=levels,
-                 cmap='plasma')
-    if plume_markers is not None:
-        for plume in plume_markers:
-            plt.plot(plobject.lats[plume_markers[plume]['lat_idx']], plobject.heights[plume_markers[plume]['lev']], marker='*', color='black', markersize=10)
-    plt.title('Zonal mean age of air', fontsize=16)
-    plt.xlabel('Latitude / deg', fontsize=16)
-    plt.ylabel('Height / km', fontsize=16)
-    cbar = plt.colorbar()
-    cbar.set_label(f'{cunit}', fontsize=16)
+    # Calculate error mean natively in xarray to preserve dimensions
+    error_mean = ds_sliced.rel_error_pct.mean(dim=['latitude', 'longitude'])
+    error_absolute = (error_mean * so2_weighted) / 100.0
+
+    # --- ax2: Individual unweighted observations ---
+    # Convert only the variables we need to a single DataFrame to ensure dropna() aligns them
+    df_unweighted = ds_sliced[['so2_ppbv', 'rel_error_pct']].to_dataframe().dropna().reset_index()
+    
+    # Calculate absolute error explicitly on the numeric columns, avoiding the datetime column
+    df_unweighted['abs_error'] = (df_unweighted['rel_error_pct'] * df_unweighted['so2_ppbv']) / 100.0
+
+    # Get simulation data to compare
+    if weighted == True:
+        plume = sim.data['so2'][:, plume_dict['plume_1']['lev'], :, plume_dict['plume_1']['lon_idx']]*1e9
+        plume = plume.sel(lat=slice(-20,20))
+        weights = np.cos(np.deg2rad(sim.data['lat'].sel(lat=slice(-20,20))))
+        plume_weighted = plume.weighted(weights).mean(dim='lat')
+        plume_vals = plume_weighted.values
+        n_full_days = plume_vals.shape[0] // 96
+        plume_vals = plume_vals[:n_full_days * 96].reshape(n_full_days, 96).mean(axis=1)
+
+        plume_padded = np.full_like(so2_weighted, np.nan) 
+        plume_padded[:2] = plume_weighted[:2].values
+        plume_padded[2:2+len(plume_vals)] = plume_vals  
+    else: 
+        plume = sim.data['so2'][:, plume_dict['plume_1']['lev'], plume_dict['plume_1']['lat_idx'], plume_dict['plume_1']['lon_idx']]*1e9
+        plume_vals = plume.values
+        n_full_days = plume_vals.shape[0] // 96
+        plume_vals = plume_vals[:n_full_days * 96].reshape(n_full_days, 96).mean(axis=1)
+        plume_padded = np.full_like(so2_weighted, np.nan)
+        plume_padded[:2] = plume[:2].values
+        plume_padded[2:2+len(plume_vals)] = plume_vals       
+
+    fig, ax1 = plt.subplots(figsize=(8, 6))
+    
+    # Plot 1: Aggregated Mean
+    ax1.errorbar(time_axis_mean, so2_weighted, yerr=error_absolute, 
+                 fmt='o', markerfacecolor='r', markeredgecolor='k', markersize=4, markeredgewidth=0.5, 
+                 ecolor='k', linewidth=1, capsize=3, capthick=1)
+    ax1.plot(time_axis_mean, plume_padded, color='blue', marker='o', linestyle='--',label='Simulated SO$_2$ plume at 70 km')
+    ax1.legend(loc='upper right')
+    ax1.set_title('Latitude-weighted SO$_2$ at 70 km', fontsize=16)
+    ax1.set_ylabel('SO$_2$ / ppbv', fontsize=16)
+    if log==True:
+        ax1.set_yscale('log')
+    ax1.set_xlabel('Date', fontsize=16)
     
     if save:
-        plt.savefig(savepath + savename, format=sformat, bbox_inches='tight')
-        plt.close()
-    else:
-        plt.show()
-
-# %%
-def plume_cross_section(plobject, key, lev, times=[54,104,174], 
-                        save=False, savename='plume_cross_section.png',
-                        savepath=None, sformat='png'):
-    """Plot a cross section of the plume for a given variable.  
-    Creates a 2x3 subplot figure: top row horizontal (lon/lat) cross sections,
-    bottom row vertical (lat/altitude) cross sections at three different times.
-    """
-    if len(times) != 3:
-        raise ValueError("times must be a list of exactly 3 time indices")
-    
-    # Get plume longitude for vertical cross section
-    lon_idx = plobject.plumes['plume_6']['lon_idx']
-    lat_idx = plobject.plumes['plume_6']['lat_idx']
-    interval = np.diff(plobject.data[key].time_counter.values)[0]/(60*60)
-    start_time = plobject.plumes['plume_6']['start_time']
-    fig, axes = plt.subplots(2, 3, figsize=(10, 8), sharey='row', sharex='col')
-    
-    # prepare letters for all 6 subplots
-    letters = [chr(97 + k) for k in range(6)]  # ['a','b',...,'f']
-    for i, time_idx in enumerate(times):
-        # Horizontal cross section (top row)
-        time_hrs = (time_idx - start_time) * interval
-        ax_h = axes[0, i]
-        data_h = plobject.data[key][time_idx, lev, 65:, 40:70]*1e6
-        cs_h = ax_h.contourf(plobject.lons[40:70], plobject.lats[65:], data_h, cmap='Blues',
-                             levels=np.arange(28,46,1))
-        ax_h.axhline(plobject.lats[lat_idx+1], color='red', linestyle='dashed', label='Plume latitude')
-        ax_h.grid(True, alpha=0.5)
-        ax_h.set_title(f'{letters[i]}) {time_hrs:.0f} hrs', fontsize=16)
+        fig.savefig(savepath+f'so2_timeseries_{start}_{end}_with_sim_{weighted}_{log}.png', bbox_inches='tight')
         
-        if i == 0:
-            ax_h.set_ylabel('Latitude / deg', fontsize=16)
-        
-        # Vertical cross section (bottom row)
-        ax_v = axes[1, i]
-        data_v = plobject.data[key][time_idx, 15:25, lat_idx+1, 40:70]*1e6
-        cs_v = ax_v.contourf(plobject.lons[40:70], plobject.heights[15:25], data_v, cmap='Blues',
-                             levels=np.arange(28,46,1))
-        ax_v.axhline(plobject.heights[lev], color='red', linestyle='dashed', label='Plume altitude')
-        # add letter label to bottom titles as well
-        ax_v.set_title(f'{letters[i+3]})', fontsize=16, pad=4)
-        if i == 0:
-            ax_v.set_ylabel('Height / km', fontsize=16)
-        ax_v.set_xlabel('Longitude / deg', fontsize=16)
-        ax_v.grid(True, alpha=0.5)
-    
-    plt.subplots_adjust(wspace=0.2, hspace=0.15)
+    plt.show()
 
-    # Add single colorbar for all subplots
-    cbar = fig.colorbar(cs_v, ax=axes.ravel(), orientation='horizontal', pad=0.1)
-    cbar.set_label('ppm', fontsize=16)
-    fig.suptitle(r'H$_2$O plume cross-sections', y=0.97, fontsize=18)
-    
-    if save:
-        if savepath is None:
-            savepath = ''
-        plt.savefig(savepath + savename, format=sformat, bbox_inches='tight')
-        plt.close()
-    else:
-        plt.show()
 
 # %%
 def dispersal_time(plobject, lev, keys, lats, lons, name_dict, threshold,
@@ -460,7 +413,7 @@ def dispersal_map(plobject, lev, keys, name_dict, threshold,
 
 # %%
 def animate_chem_plume(plobject, lev, keys, name_dict, t0, tf, n=4, qscale=1,
-                  savename='test.png', savepath=None, snapshot=None):
+                  log=False,savename='test.png', savepath=None, snapshot=None):
     """
     Create an animation of a chemical plume.
 
@@ -487,7 +440,8 @@ def animate_chem_plume(plobject, lev, keys, name_dict, t0, tf, n=4, qscale=1,
         'co':  {'cmap': 'Purples', 'vmax': 11.0},
         'ocs': {'cmap': 'Greens', 'vmax': 1.5},
         'hcl': {'cmap': 'Reds', 'vmax': 0.6},
-        'so2': {'cmap': 'Greens', 'vmax': 0.2}
+        'so2': {'cmap': 'Greens', 'vmax': 1000.0},
+        'temp': {'cmap': 'inferno', 'vmax': None}
     }
 
     # Extract data
@@ -496,7 +450,7 @@ def animate_chem_plume(plobject, lev, keys, name_dict, t0, tf, n=4, qscale=1,
         if key == 'n2':
              cubes[key] = plobject.data[key][t0:tf,lev,:,:]*100
         else:
-             cubes[key] = plobject.data[key][t0:tf,lev,:,:]*1e6
+             cubes[key] = plobject.data[key][t0:tf,lev,:,:]*1e9
 
     # Extract zonal and meridional wind for desired altitude
     u = plobject.data['vitu'][t0:tf,lev,:,:]
@@ -556,7 +510,7 @@ def animate_chem_plume(plobject, lev, keys, name_dict, t0, tf, n=4, qscale=1,
                 vmin = cube.min()
 
             cf = ax.contourf(plobject.lons, plobject.lats, cube[frame,:,:],
-                                  cmap=cmap,
+                                  cmap=cmap, norm=colors.LogNorm() if key == 'so2' else None,
                                   vmin=vmin, vmax=vmax)
             
             q = ax.quiver(X[::n, ::n], Y[::n, ::n], -u[frame,::n,::n],
@@ -605,10 +559,12 @@ def animate_chem_plume(plobject, lev, keys, name_dict, t0, tf, n=4, qscale=1,
              vmax = cube.max()
              vmin = cube.min()
              
-        cf = ax.contourf(plobject.lons, plobject.lats, cube[4,:,:], cmap=cmap, vmin=vmin, vmax=vmax)
+        cf = ax.contourf(plobject.lons, plobject.lats, cube[4,:,:], cmap=cmap, norm=colors.LogNorm() if key == 'so2' and log == True else None, vmin=vmin, vmax=vmax)
         cbar = plt.colorbar(cf, ax=ax, orientation='horizontal')
         if key == 'n2':
              cbar.set_label('%', color='black', fontsize=16)
+        elif key == 'so2':
+            cbar.set_label('ppbv', color='black', fontsize=16)
         else:
              cbar.set_label('ppm', color='black', fontsize=16)
 

@@ -2,12 +2,12 @@
 Class definitions for 'How long could volcanic plumes persist in the Venus atmosphere?'
 (Cohen et al. 2026).
 """
-
+# %%
 import xarray as xr
 import numpy as np
 
 from tools import venusdict, heights50, heights78
-
+# %%
 class PlumeSim:
     """
     A PlumeSim object which contains the output data for a simulation.

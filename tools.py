@@ -2,9 +2,10 @@
 Utility tools for 'How long could volcanic plumes persist in the Venus atmosphere?'
 (Cohen et al. 2026).
 """
-
+# %%
 import numpy as np
 import xarray as xr
+from scipy.optimize import curve_fit
 
 # %% Definition of basic Venus model constants
 # radius: km, g: m/s^2, periods: days, psurf: bar
@@ -50,18 +51,27 @@ heights78 = [9.45306290e-03, 4.83510271e-02, 1.53046221e-01, 3.73352647e-01,
        1.37256210e+02, 1.39007202e+02, 1.40822159e+02, 1.42683762e+02,
        1.44574203e+02, 1.46479889e+02]
 # Dictionary of plume coordinates
-plume_dict = {  'plume_1': {'name': 'h2o_lev10_eq', 'lev': 10, 'lat_idx': 49, 'lon_idx': 92, 'start_time': 4, 'end_time': 127},
-                'plume_2': {'name': 'h2o_lev10_hl', 'lev': 10, 'lat_idx': 82, 'lon_idx': 47, 'start_time': 4, 'end_time': 127},
-                'plume_3': {'name': 'h2o_hcl_lev14_eq', 'lev': 14, 'lat_idx': 49, 'lon_idx': 92, 'start_time': 4, 'end_time': 127},
-                'plume_4': {'name': 'h2o_hcl_lev14_hl', 'lev': 14, 'lat_idx': 82, 'lon_idx': 47, 'start_time': 4, 'end_time': 127},
-                'plume_5': {'name': 'four_gases_lev18_eq', 'lev': 18, 'lat_idx': 49, 'lon_idx': 92, 'start_time': 4, 'end_time': 127},
-                'plume_6': {'name': 'four_gases_lev18_hl', 'lev': 18, 'lat_idx': 82, 'lon_idx': 47, 'start_time': 4, 'end_time': 127},
-#               'plume_7': {'name': 'so2_lev35_eq', 'lev': 35, 'lat_idx': 49, 'lon_idx': 92, 'start_time': 4, 'end_time': 127},
-#                'plume_8': {'name': 'so2_lev35_hl', 'lev': 35, 'lat_idx': 82, 'lon_idx': 47, 'start_time': 4, 'end_time': 127}
+plume_dict = {'plume_1': {'name': 'so2_lev35_eqday', 'lev': 35, 'lat_idx': 49, 'lon_idx': 92, 'start_time': 4, 'end_time': 127},
+              'plume_2': {'name': 'so2_lev35_eqnight', 'lev': 35, 'lat_idx': 49, 'lon_idx': 47, 'start_time': 4, 'end_time': 127},
+              'hotspot': {'name': 'hotspot', 'lev': 22, 'lat_idx': 49, 'lon_idx': 47, 'start_time': 4, 'end_time': 127}
             }
 
 name_dict = {'h2o': 'H$_2$O', 'hcl': 'HCl', 'co': 'CO', 'ocs': 'OCS', 'so2': 'SO$_2$'}
 
+# %%
+def logistic_decay(levs=22, L=115, K=760, x0=20, k=0.2):
+    """
+    levs = number of levels
+    K = bottom level temp
+    L = top level temp
+    x0 = midpoint of transition (lev)
+    k = decay rate
+    """
+    x = np.arange(levs)
+
+    return L + (K - L) / (1 + np.exp(k * (x - x0)))
+
+# %%
 def find_plume(plobject, key, lev, threshold):
     """
     Find array indices of maximum tracer value.
