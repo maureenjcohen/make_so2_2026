@@ -23,6 +23,7 @@ import matplotlib.animation as animation
 from classes import PlumeSim
 from plotting_functions import dispersal_time, dispersal_map, animate_chem_plume, summ_stats, time_series
 from plotting_functions import data_compare, sensitivity_test, marcq_reproduce
+from fig1 import figure1, STYLE
 from tools import venusdict, plume_dict, calculate_so2_mass, name_dict
 
 
