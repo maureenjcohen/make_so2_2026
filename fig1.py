@@ -103,11 +103,12 @@ def figure1(sim, ds, snap_times, long_start, long_end, zoom_start, zoom_end,
 
     height_km = np.round(sim.heights[lev], 1)
 
-    # --- Pre-compute lat-weighted global-mean SO2 for all simulation timesteps ---
-    # This matches the SPICAV weighting: cos(lat)-weighted mean over lat and lon.
+    # --- Pre-compute lat-weighted equatorial-mean SO2 for all simulation timesteps ---
+    # Restricted to 20 S–20 N to match the SPICAV spatial coverage and weighting.
     sim_so2_3d   = sim.data['so2'][:, lev, :, :] * 1e9          # ppbv (time, lat, lon)
-    sim_lat_w    = np.cos(np.deg2rad(sim.data['lat']))
-    sim_so2_mean = sim_so2_3d.weighted(sim_lat_w).mean(dim=['lat', 'lon'])  # (time,)
+    sim_so2_eq   = sim_so2_3d.sel(lat=slice(-20, 20))
+    sim_lat_w    = np.cos(np.deg2rad(sim_so2_eq.lat))
+    sim_so2_mean = sim_so2_eq.weighted(sim_lat_w).mean(dim=['lat', 'lon'])  # (time,)
     sim_times    = sim.data.time_counter.values                   # seconds from model start
 
     plume_inject_time = sim_times[plume_dict['plume_1']['start_time']]
@@ -131,10 +132,10 @@ def figure1(sim, ds, snap_times, long_start, long_end, zoom_start, zoom_end,
     # --- Layout ---
     # Left column: 4 globe panels + shared colorbar below.
     # Right column: long time series (top) + zoomed time series (bottom).
-    fig      = plt.figure(figsize=(TWO_COL, 7.5))
-    outer_gs = fig.add_gridspec(1, 2, width_ratios=[1, 1.1], wspace=0.4)
-    left_gs  = outer_gs[0].subgridspec(5, 1, height_ratios=[1, 1, 1, 1, 0.08], hspace=0.08)
-    right_gs = outer_gs[1].subgridspec(2, 1, hspace=0.4)
+    fig      = plt.figure(figsize=(TWO_COL, 6.2))
+    outer_gs = fig.add_gridspec(1, 2, width_ratios=[0.82, 1.18], wspace=0.4)
+    left_gs  = outer_gs[0].subgridspec(5, 1, height_ratios=[1, 1, 1, 1, 0.18], hspace=0.25)
+    right_gs = outer_gs[1].subgridspec(2, 1, hspace=0.45)
 
     globe_axes = [fig.add_subplot(left_gs[i], projection=proj) for i in range(4)]
     ax_cbar    = fig.add_subplot(left_gs[4])
@@ -173,11 +174,14 @@ def figure1(sim, ds, snap_times, long_start, long_end, zoom_start, zoom_end,
 
         # Time since plume injection
         hrs = (sim_times[t] - plume_inject_time) / 3600.0
-        ax.set_title(f'{labels[i]}) {hrs:+.0f} h', loc='left', pad=2)
+        ax.set_title(f'{labels[i]}) {hrs:+.0f} h', loc='left', pad=5)
 
     # Shared colorbar for all globe panels
+    from matplotlib.ticker import LogLocator, LogFormatterMathtext
     cb = fig.colorbar(cf, cax=ax_cbar, orientation='horizontal')
-    cb.set_label(f'SO$_2$ vmr at {height_km} km (ppbv)')
+    cb.set_label(f'SO$_2$ at {height_km} km (ppbv)')
+    cb.ax.xaxis.set_major_locator(LogLocator(base=10, subs=[1, 2, 5]))
+    cb.ax.xaxis.set_major_formatter(LogFormatterMathtext())
     cb.ax.xaxis.set_tick_params(which='both', direction='in')
 
     # --- Time series panels ---
@@ -212,14 +216,14 @@ def figure1(sim, ds, snap_times, long_start, long_end, zoom_start, zoom_end,
         ax.set_xlabel('Date')
         ax.set_title(label, loc='left', pad=2)
 
+        # ConciseDateFormatter avoids overlapping labels and adapts to any date range
+        locator = mdates.AutoDateLocator(minticks=5, maxticks=9)
+        ax.xaxis.set_major_locator(locator)
+        ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
+
         if zoom:
-            ax.xaxis.set_major_locator(mdates.MonthLocator())
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%b %Y'))
             ax.xaxis.set_minor_locator(mdates.DayLocator(interval=7))
-            ax.tick_params(axis='x', labelrotation=30)
         else:
-            ax.xaxis.set_major_locator(mdates.YearLocator())
-            ax.xaxis.set_major_formatter(mdates.DateFormatter('%Y'))
             ax.xaxis.set_minor_locator(mdates.MonthLocator())
 
     plot_ts(ax_long, long_start, long_end, label='e)')
