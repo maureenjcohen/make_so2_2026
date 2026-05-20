@@ -135,20 +135,9 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
     plume_inject_time = sim_times[plume_dict['plume_1']['start_time']]
     anchor_date       = pd.Timestamp(ds.start_date.values[plume_anchor])
 
-    def match_plume_to_obs(obs_dates):
-        """
-        For each SPICAV observation date, find the nearest simulation timestep
-        and return the dayside plume maximum SO2 (ppbv).
-        Returns NaN for observations outside the simulation time range.
-        """
-        matched = np.full(len(obs_dates), np.nan)
-        for i, obs_date in enumerate(obs_dates):
-            delta_s = (pd.Timestamp(obs_date) - anchor_date).total_seconds()
-            target  = plume_inject_time + delta_s
-            if sim_times[0] <= target <= sim_times[-1]:
-                nearest    = int(np.argmin(np.abs(sim_times - target)))
-                matched[i] = float(sim_so2_track[nearest])
-        return matched
+    # Real-world date for every simulation timestep
+    sim_dates = np.array([anchor_date + pd.Timedelta(seconds=float(t - plume_inject_time))
+                          for t in sim_times])
 
     # --- Layout ---
     # Left column: 4 globe panels + shared colorbar below.
@@ -231,13 +220,13 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
                     ecolor='k', linewidth=0.6, capsize=2, capthick=0.8,
                     zorder=3, label='SPICAV')
 
-        # Simulated plume: each obs date matched to nearest simulation timestep
-        plume = match_plume_to_obs(obs_dates)
-        mask  = ~np.isnan(plume)
-        if mask.any():
-            ax.plot(obs_dates[mask], plume[mask],
+        # Simulated plume at its native cadence, clipped to this panel's date range
+        panel_start  = pd.Timestamp(ds.start_date.values[start])
+        panel_end    = pd.Timestamp(ds.start_date.values[end - 1])
+        sim_in_panel = (sim_dates >= panel_start) & (sim_dates <= panel_end)
+        if sim_in_panel.any():
+            ax.plot(sim_dates[sim_in_panel], sim_so2_track[sim_in_panel],
                     color='blue', linestyle='--', linewidth=1.0,
-                    marker='o', markersize=2, markeredgecolor=None,
                     label='Simulated plume', zorder=4)
 
         ax.set_yscale('log')
