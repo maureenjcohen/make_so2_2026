@@ -121,9 +121,16 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
         roll_step    = int(subsol_all[t_idx] - n_lons // 2)
         local_times  = np.roll(hours, roll_step)
         dayside_mask = (local_times >= 6) & (local_times <= 18)
-        so2_field    = sim.data['so2'][t_idx, lev, :, :].values * 1e9
-        so2_eq_day   = so2_field[np.ix_(lat_mask, dayside_mask)]
-        sim_so2_track[t_idx] = so2_eq_day.max()
+        so2_field  = sim.data['so2'][t_idx, lev, :, :].values * 1e9  # (lat, lon)
+        so2_eq_day = so2_field[np.ix_(lat_mask, dayside_mask)]       # (n_eq_lats, n_dayside_lons)
+
+        # Longitude column on the dayside where equatorial SO2 is highest
+        peak_lon   = np.argmax(so2_eq_day.max(axis=0))
+        peak_col   = so2_eq_day[:, peak_lon]
+
+        # Latitude-weighted mean of that column, matching SPICAV processing
+        lat_weights = np.cos(np.deg2rad(sim.lats[lat_mask]))
+        sim_so2_track[t_idx] = np.average(peak_col, weights=lat_weights)
 
     plume_inject_time = sim_times[plume_dict['plume_1']['start_time']]
     anchor_date       = pd.Timestamp(ds.start_date.values[plume_anchor])
