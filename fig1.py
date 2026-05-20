@@ -72,7 +72,7 @@ TWO_COL       = 6.85   # 17.4 cm — full width
 
 # %%
 def figure1(sim, ds, snap_times=[8, 158, 208, 278], 
-            long_start=0, long_end=334, zoom_start=40, zoom_end=71,
+            long_start=0, long_end=334, zoom_start=38, zoom_end=72,
             plume_anchor=41, lev=35, central_lon=130,
             vmin=1.0, vmax=1000.0, n_quiver=4,
             save=False, savepath=None, savename='figure1.pdf'):

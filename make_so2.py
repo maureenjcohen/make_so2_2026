@@ -42,7 +42,7 @@ if __name__ == "__main__":
 
     # %%
     figure1(eqday_sim, ds_retrievals, snap_times=[8, 158, 208, 278], 
-            long_start=0, long_end=100, zoom_start=40, zoom_end=71, 
+            long_start=0, long_end=100, zoom_start=38, zoom_end=72, 
             plume_anchor=41, lev=35, central_lon=130)
 
     # %%
