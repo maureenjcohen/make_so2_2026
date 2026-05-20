@@ -35,18 +35,15 @@ if __name__ == "__main__":
     ds_retrievals = xr.open_dataset(retrievals)
 
     # %%
-    # Plot Marcq 2013 comparison
-    marcq_reproduce(ds_retrievals, save=False, window=240, min_valid_days=60,
-               savepath=savedir)
-    
-    # %%
-    time_series(ds_retrievals, 40, 71)
-
-    # %%
     # Create PlumeSim object and load data for plume run
     eqday_sim = PlumeSim(venusdict, plume_dict, 'equatorial dayside plume')
     eqday_sim.load_file(eqday_plume)
     eqday_sim.set_resolution()
+
+    # %%
+    figure1(eqday_sim, ds_retrievals, snap_times=[8, 158, 208, 278], 
+            long_start=0, long_end=100, zoom_start=40, zoom_end=71, 
+            plume_anchor=41, lev=35, central_lon=130)
 
     # %%
    # Animation + cover image of SO2 plume at 70 km
