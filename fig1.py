@@ -104,13 +104,26 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
 
     height_km = np.round(sim.heights[lev], 1)
 
-    # --- Pre-compute lat-weighted equatorial-mean SO2 for all simulation timesteps ---
-    # Restricted to 20 S–20 N to match the SPICAV spatial coverage and weighting.
-    sim_so2_3d = sim.data['so2'][:, lev, :, :] * 1e9          # ppbv (time, lat, lon)
-    sim_so2_eq = sim_so2_3d.isel(lon=plume_dict['plume_1']['lon_idx']).sel(lat=slice(-20, 20))
-    sim_lat_w = np.cos(np.deg2rad(sim_so2_eq.lat))
-    sim_so2_mean = sim_so2_eq.weighted(sim_lat_w).mean(dim='lat')
-    sim_times = sim.data.time_counter.values                   # seconds from model start
+    # --- Pre-compute dayside plume maximum over equatorial band ---
+    # At each timestep, find the subsolar longitude from TOA radiation, build a
+    # dayside mask (local time 6–18), then take the maximum SO2 in the ±20°
+    # equatorial band on the dayside. This tracks the plume peak as it advects
+    # until it crosses the terminator and becomes invisible to SPICAV.
+    sim_times   = sim.data.time_counter.values                   # seconds from model start
+    equator     = int(np.argmin(np.abs(sim.lats)))
+    subsol_all  = sim.data['tops'][:, equator, :].argmax(dim='lon').values  # subsolar lon index per timestep
+    n_lons      = len(sim.lons)
+    hours       = np.arange(24, 0, -24 / n_lons)
+    lat_mask    = np.abs(sim.lats) <= 20
+
+    sim_so2_track = np.full(len(sim_times), np.nan)
+    for t_idx in range(len(sim_times)):
+        roll_step    = int(subsol_all[t_idx] - n_lons // 2)
+        local_times  = np.roll(hours, roll_step)
+        dayside_mask = (local_times >= 6) & (local_times <= 18)
+        so2_field    = sim.data['so2'][t_idx, lev, :, :].values * 1e9
+        so2_eq_day   = so2_field[np.ix_(lat_mask, dayside_mask)]
+        sim_so2_track[t_idx] = so2_eq_day.max()
 
     plume_inject_time = sim_times[plume_dict['plume_1']['start_time']]
     anchor_date       = pd.Timestamp(ds.start_date.values[plume_anchor])
@@ -118,7 +131,7 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
     def match_plume_to_obs(obs_dates):
         """
         For each SPICAV observation date, find the nearest simulation timestep
-        and return the pre-computed weighted-mean SO2 value (ppbv).
+        and return the dayside plume maximum SO2 (ppbv).
         Returns NaN for observations outside the simulation time range.
         """
         matched = np.full(len(obs_dates), np.nan)
@@ -126,8 +139,8 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
             delta_s = (pd.Timestamp(obs_date) - anchor_date).total_seconds()
             target  = plume_inject_time + delta_s
             if sim_times[0] <= target <= sim_times[-1]:
-                nearest      = int(np.argmin(np.abs(sim_times - target)))
-                matched[i]   = float(sim_so2_mean.values[nearest])
+                nearest    = int(np.argmin(np.abs(sim_times - target)))
+                matched[i] = float(sim_so2_track[nearest])
         return matched
 
     # --- Layout ---
