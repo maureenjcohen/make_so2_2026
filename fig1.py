@@ -11,7 +11,7 @@ from matplotlib import colors
 import pandas as pd
 import cartopy.crs as ccrs
 
-from tools import plume_dict
+from tools import plume_dict, local_time
 
 # %%
 # --- Publication style ---
@@ -71,9 +71,10 @@ TWO_COL       = 6.85   # 17.4 cm — full width
 
 
 # %%
-def figure1(sim, ds, snap_times, long_start, long_end, zoom_start, zoom_end,
-            plume_anchor, lev=35, central_lon=0,
-            vmin=100.0, vmax=1000.0, n_quiver=4,
+def figure1(sim, ds, snap_times=[8, 158, 208, 278], 
+            long_start=0, long_end=334, zoom_start=40, zoom_end=71,
+            plume_anchor=41, lev=35, central_lon=130,
+            vmin=1.0, vmax=1000.0, n_quiver=4,
             save=False, savepath=None, savename='figure1.pdf'):
     """
     Figure 1: four orthographic SO2 globe snapshots (left column) and two
@@ -105,11 +106,11 @@ def figure1(sim, ds, snap_times, long_start, long_end, zoom_start, zoom_end,
 
     # --- Pre-compute lat-weighted equatorial-mean SO2 for all simulation timesteps ---
     # Restricted to 20 S–20 N to match the SPICAV spatial coverage and weighting.
-    sim_so2_3d   = sim.data['so2'][:, lev, :, :] * 1e9          # ppbv (time, lat, lon)
-    sim_so2_eq   = sim_so2_3d.sel(lat=slice(-20, 20))
-    sim_lat_w    = np.cos(np.deg2rad(sim_so2_eq.lat))
-    sim_so2_mean = sim_so2_eq.weighted(sim_lat_w).mean(dim=['lat', 'lon'])  # (time,)
-    sim_times    = sim.data.time_counter.values                   # seconds from model start
+    sim_so2_3d = sim.data['so2'][:, lev, :, :] * 1e9          # ppbv (time, lat, lon)
+    sim_so2_eq = sim_so2_3d.isel(lon=plume_dict['plume_1']['lon_idx']).sel(lat=slice(-20, 20))
+    sim_lat_w = np.cos(np.deg2rad(sim_so2_eq.lat))
+    sim_so2_mean = sim_so2_eq.weighted(sim_lat_w).mean(dim='lat')
+    sim_times = sim.data.time_counter.values                   # seconds from model start
 
     plume_inject_time = sim_times[plume_dict['plume_1']['start_time']]
     anchor_date       = pd.Timestamp(ds.start_date.values[plume_anchor])
@@ -153,18 +154,18 @@ def figure1(sim, ds, snap_times, long_start, long_end, zoom_start, zoom_end,
         v_snap   = sim.data['vitv'][t, lev, :, :].values
 
         cf = ax.pcolormesh(sim.lons, sim.lats, so2_snap,
-                           norm=norm, cmap='Greens', transform=plate)
+                           norm=norm, cmap='YlOrBr_r', transform=plate)
 
         q = ax.quiver(sim.lons[::n_quiver], sim.lats[::n_quiver],
                       -u_snap[::n_quiver, ::n_quiver], v_snap[::n_quiver, ::n_quiver],
                       transform=plate, color='black',
-                      width=0.003, headwidth=3)
+                      width=0.005, headwidth=4, scale=800)
 
         # Reference arrow on the first panel only
         if i == 0:
-            ax.quiverkey(q, X=0.88, Y=1.06, U=50, label='50 m s$^{-1}$',
+            ax.quiverkey(q, X=0.88, Y=1.06, U=100, label='100 m s$^{-1}$',
                          labelpos='E', coordinates='axes',
-                         fontproperties={'size': 6})
+                         fontproperties={'size': 9})
 
         ax.set_global()
         gl = ax.gridlines(crs=plate, linewidth=0.3, color='grey',
@@ -172,17 +173,23 @@ def figure1(sim, ds, snap_times, long_start, long_end, zoom_start, zoom_end,
         gl.xlocator = mticker.FixedLocator([-180, -90, 0, 90, 180])
         gl.ylocator = mticker.FixedLocator([-60, -30, 0, 30, 60])
 
+        local_times = local_time(sim, time_slice=t, silent='yes')
+        term_ind = local_times.index(6.0) # Pick 6.0 for evening terminator because
+        # cartopy doesn't know the VPCM's longitude axis is backwards (trust me)
+        term_lon = sim.lons[term_ind]
+        ax.plot([term_lon, term_lon], [-90,90], transform=plate, color='k', linewidth=1,
+                linestyle='dashed', zorder=5)
+
         # Time since plume injection
         hrs = (sim_times[t] - plume_inject_time) / 3600.0
         ax.set_title(f'{labels[i]}) {hrs:+.0f} h', loc='left', pad=5)
 
     # Shared colorbar for all globe panels
-    from matplotlib.ticker import LogLocator, LogFormatterMathtext
     cb = fig.colorbar(cf, cax=ax_cbar, orientation='horizontal')
     cb.set_label(f'SO$_2$ at {height_km} km (ppbv)')
-    cb.ax.xaxis.set_major_locator(LogLocator(base=10, subs=[1, 2, 5]))
-    cb.ax.xaxis.set_major_formatter(LogFormatterMathtext())
-    cb.ax.xaxis.set_tick_params(which='both', direction='in')
+    cb.locator = mticker.FixedLocator([1, 10, 100,1000])
+    cb.update_ticks()
+    cb.ax.xaxis.set_minor_locator(mticker.NullLocator())
 
     # --- Time series panels ---
     def plot_ts(ax, start, end, label, zoom=False):
@@ -196,8 +203,10 @@ def figure1(sim, ds, snap_times, long_start, long_end, zoom_start, zoom_end,
         err_mean = ds_sl.rel_error_pct.mean(dim=['latitude', 'longitude'])
         err_abs  = (err_mean * so2_obs) / 100.0
 
+        ax.set_facecolor('wheat')
+
         ax.errorbar(obs_dates, so2_obs.values, yerr=err_abs.values,
-                    fmt='o', markerfacecolor='r', markeredgecolor='k',
+                    fmt='o', markerfacecolor='firebrick', markeredgecolor='k',
                     markersize=3, markeredgewidth=0.4,
                     ecolor='k', linewidth=0.6, capsize=2, capthick=0.8,
                     zorder=3, label='SPICAV')
@@ -207,8 +216,8 @@ def figure1(sim, ds, snap_times, long_start, long_end, zoom_start, zoom_end,
         mask  = ~np.isnan(plume)
         if mask.any():
             ax.plot(obs_dates[mask], plume[mask],
-                    color='steelblue', linestyle='--', linewidth=1.0,
-                    marker='o', markersize=2,
+                    color='blue', linestyle='--', linewidth=1.0,
+                    marker='o', markersize=2, markeredgecolor=None,
                     label='Simulated plume', zorder=4)
 
         ax.set_yscale('log')
@@ -229,9 +238,11 @@ def figure1(sim, ds, snap_times, long_start, long_end, zoom_start, zoom_end,
     plot_ts(ax_long, long_start, long_end, label='e)')
     plot_ts(ax_zoom, zoom_start, zoom_end, label='f)', zoom=True)
 
-    ax_long.legend(loc='upper right')
+    ax_long.legend(loc='upper right', fontsize=7, markerscale=0.8)
 
     if save:
         fig.savefig(savepath + savename)
 
     plt.show()
+
+# %%

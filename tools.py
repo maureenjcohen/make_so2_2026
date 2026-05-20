@@ -162,4 +162,31 @@ def max_dispersal(plobject, lev, lat, threshold=1.05):
 
     results_dict = {'hl_plume_max': top_half, 'hl_max_coords': (lat + top_row, top_col), 'eq_plume_max': bottom_half, 'eq_max_coords': (bottom_row, bottom_col)}
     return results_dict
+
+# %%
+def local_time(plobject, time_slice=-1, silent='no'):
+    
+    """ A function that calculates the local time for a
+    snapshot from a given timestep."""
+    equator = np.argmin(np.abs(plobject.lats))
+    # Find row number of latitude closest to 0,
+    # aka the equator
+    rad_toa = plobject.data['tops']
+    # Solar radiation at top of atmosphere
+    subsol = int(rad_toa[time_slice,equator,:].argmax(dim='lon').values)
+    # Find column number of longitude where solar
+    # radiation is currently at a maximum
+    if silent=='no':
+        print('Local noon is at col ' + str((subsol)))
+        print('Local noon is at lon ' + str(plobject.lons[subsol]))
+    else:
+        pass
+    dt = 24/len(plobject.lons)
+    hours = np.arange(24,0,-dt)
+    # Array of hour coordinates with same
+    # dimension as longitude coordinates
+    roll_step = int(subsol - (len(plobject.lons)/2))
+    new_hours = list(np.roll(hours, roll_step))
+
+    return new_hours
 # %%
