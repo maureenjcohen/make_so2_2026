@@ -84,7 +84,7 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
         v_snap     = sim.data['vitv'][t, lev, :, :].values
 
         cf = ax.contourf(sim.lons, sim.lats, vitwz_snap,
-                         levels=np.linspace(vmin, vmax, 21),
+                         levels=np.linspace(vmin, vmax, 21), extend='max',
                          norm=norm, cmap='seismic', transform=plate)
 
         ax.quiver(sim.lons[::n_quiver], sim.lats[::n_quiver],

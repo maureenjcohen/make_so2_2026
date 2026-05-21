@@ -6,7 +6,7 @@ Plotting functions for 'Decadal sulphur dioxide variability on Venus not caused 
 eqday_plume = '/exomars/data/internal/working/mc5526/VPCM_decadal/Xins_eq_day.nc'
 eqnight_plume = '/exomars/data/internal/working/mc5526/VPCM_decadal/Xins_eq_night.nc'
 chem_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/so2_plume_96x96x78/Xins_chem.nc'
-hotspot_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/hotspot_96x96x50/Xins.nc'
+hotspot_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/hotspot_96x96x50/Xins_pillar.nc'
 retrievals = '/exomars/projects/mc5526/VPCM_decadal_so2/netcdfs/SO2_lons.nc'
 savedir = '/exomars/projects/mc5526/VPCM_decadal_so2/scratch_plots/'
 filetype = 'png'
@@ -23,7 +23,7 @@ import matplotlib.animation as animation
 from classes import PlumeSim
 from plotting_functions import dispersal_time, dispersal_map, animate_chem_plume, summ_stats, time_series
 from plotting_functions import data_compare, sensitivity_test, marcq_reproduce
-from fig1 import figure1, STYLE
+from fig1 import figure1, figure2, STYLE
 from tools import venusdict, plume_dict, calculate_so2_mass, name_dict
 
 
@@ -44,6 +44,21 @@ if __name__ == "__main__":
     figure1(eqday_sim, ds_retrievals, snap_times=[8, 158, 208, 278], 
             long_start=0, long_end=100, zoom_start=38, zoom_end=72, 
             plume_anchor=41, lev=35, central_lon=130)
+    
+    # %%
+    eqday_sim.close()
+    del eqday_sim
+
+    # %%
+    pillar = PlumeSim(venusdict, plume_dict, 'pillar of fire')
+    pillar.load_file(hotspot_plume)
+    pillar.set_resolution()
+    
+    # %%
+    figure2(pillar, snap_times=[130, 196, 230, 256, 300, 368], 
+            ts_levs=[22, 28, 34, 40], ts_start=100, ts_end=700, 
+            lev=22, central_lon=0, lat_idx=49, lon_idx=47, 
+            vmin=-1.2, vmax=3.0)
 
     # %%
    # Animation + cover image of SO2 plume at 70 km
