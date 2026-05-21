@@ -24,7 +24,7 @@ import matplotlib.animation as animation
 from classes import PlumeSim
 from plotting_functions import dispersal_time, dispersal_map, animate_chem_plume, summ_stats, time_series
 from plotting_functions import data_compare, sensitivity_test, marcq_reproduce
-from fig1 import figure1, figure2, figure3, STYLE
+from fig1 import figure1, figure2, figure3, figure0, STYLE
 from tools import venusdict, plume_dict, calculate_so2_mass, name_dict
 
 
@@ -34,6 +34,9 @@ if __name__ == "__main__":
     # %%
     # Open retrievals dataset
     ds_retrievals = xr.open_dataset(retrievals)
+
+    # %%
+    figure0(ds_retrievals, rolling_window=60)
 
     # %%
     # Create PlumeSim object and load data for plume run
