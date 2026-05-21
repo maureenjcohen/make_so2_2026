@@ -117,7 +117,11 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
         vitwz_ts  = sim.data['vitwz'][ts_start:ts_end, ts_lev, lat_idx, lon_idx].values
         alt_label = f'{sim.heights[ts_lev]:.0f} km'
         ax_w.plot(ts_hours, vitwz_ts, color=c, linewidth=1.0, label=alt_label)
-    ax_w.axvline(ts_hours[plume_dict['hotspot']['end_time']-ts_start], color='darkgrey', linestyle='--')
+    x_inj_end = ts_hours[plume_dict['hotspot']['end_time'] - ts_start]
+    ax_w.axvline(x_inj_end, color='darkgrey', linestyle='--')
+    ax_w.text(x_inj_end + 0.5, 0.97, 'Injection stops',
+              transform=ax_w.get_xaxis_transform(),
+              va='top', ha='left', fontsize=7, color='darkgrey')
     ax_w.axhline(0, color='k', linewidth=0.5, linestyle=':')
     ax_w.set_xlabel('Time from injection (h)')
     ax_w.set_ylabel('Vertical wind (m s$^{-1}$)')
