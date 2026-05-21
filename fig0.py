@@ -45,9 +45,9 @@ def figure0(ds, rolling_window=240, start=0, end=None,
     err_vals = err_abs.values
 
     # Rolling mean and standard error, point-based window (xarray)
-    smoothed     = so2_obs.rolling(start_date=rolling_window, center=False,
+    smoothed     = so2_obs.rolling(start_date=rolling_window, center=True,
                                    min_periods=rolling_window // 4).mean()
-    roll         = so2_obs.rolling(start_date=rolling_window, center=False,
+    roll         = so2_obs.rolling(start_date=rolling_window, center=True,
                                    min_periods=rolling_window // 4)
     smoothed_err = roll.std() / np.sqrt(roll.count())
 
@@ -79,12 +79,12 @@ def figure0(ds, rolling_window=240, start=0, end=None,
     # --- Bottom: rolling mean with error bars ---
     ax_bot.errorbar(obs_dates, smoothed.values, yerr=smoothed_err.values,
                     fmt='o', markerfacecolor='firebrick', markeredgecolor='k',
-                    markersize=3, markeredgewidth=0.4, linestyle='none',
-                    ecolor='k', linewidth=0.6, capsize=2, capthick=0.8)
+                    markersize=3, markeredgewidth=0.4, linestyle='--', color='grey',
+                    ecolor='k', linewidth=1.0, capsize=2, capthick=0.8)
 
     ax_bot.set_ylabel('SO$_2$ vmr (ppbv)')
     ax_bot.set_xlabel('Date')
-    ax_bot.set_title(f'b) {rolling_window}-day rolling mean', loc='left', pad=2)
+    ax_bot.set_title(f'b) {rolling_window}-point rolling mean', loc='left', pad=2)
     ax_bot.spines['top'].set_visible(True)
     ax_bot.spines['right'].set_visible(True)
 
