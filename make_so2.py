@@ -24,7 +24,7 @@ import matplotlib.animation as animation
 from classes import PlumeSim
 from plotting_functions import dispersal_time, dispersal_map, animate_chem_plume, summ_stats, time_series
 from plotting_functions import data_compare, sensitivity_test, marcq_reproduce
-from fig1 import figure1, figure2, STYLE
+from fig1 import figure1, figure2, figure3, STYLE
 from tools import venusdict, plume_dict, calculate_so2_mass, name_dict
 
 
@@ -62,16 +62,19 @@ if __name__ == "__main__":
             vmin=-1.2, vmax=3.0)
 
     # %%
-   # Animation + cover image of SO2 plume at 70 km
-    animate_chem_plume(so2, lev=35, keys=['so2'], name_dict=name_dict, t0=0, tf=1200, qscale=5, log=False, savepath=savedir, savename='eqday_plume_no_log', snapshot=100)
-    
+    pillar.close()
+    del pillar
+
     # %%
-    # Dispersal time of SO2 plumes at 70 km
-    dispersal_time(so2, lev=35, keys=['so2'], lats=[49,82], lons=[92,47], name_dict=name_dict,
-                   threshold=1.05, axis_len=500,
-                   save=True, savename='eq_day_dispersal' + '.' + filetype, sformat=filetype,
-                   savepath=savedir)
-    
+    chem = PlumeSim(venusdict, plume_dict, 'potential absorber plume')
+    chem.load_file(chem_plume)
+    chem.set_resolution()
+
+    # %%
+    figure3(chem, snap_times=[10, 140, 304, 364], ts_levs=[21, 22, 23], ts_start=0, ts_end=2000, central_lon=320)
+    # %%
+   # Animation + cover image of SO2 plume at 70 km
+    animate_chem_plume(so2, lev=35, keys=['so2'], name_dict=name_dict, t0=0, tf=1200, qscale=5, log=False, savepath=savedir, savename='eqday_plume_no_log', snapshot=100) 
 
     # %%
     # Calculation of SO2 mass in plume at 70 km for reference

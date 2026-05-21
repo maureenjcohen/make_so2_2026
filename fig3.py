@@ -14,7 +14,7 @@ from tools import plume_dict
 
 # %%
 def figure3(sim, snap_times, ts_levs, ts_start, ts_end,
-            lev=22, central_lon=130,
+            lev=22, central_lon=320,
             n_quiver=4, vmin=None, vmax=None,
             save=False, savepath=None, savename='figure3.pdf'):
     """
@@ -78,7 +78,7 @@ def figure3(sim, snap_times, ts_levs, ts_start, ts_end,
                   width=0.005, headwidth=4, scale=400)
         # Reference arrow on the first panel
         if i == 0:
-            ax.quiverkey(q, X=0.08, Y=0.08, U=40, label='40 m s$^{-1}$',
+            ax.quiverkey(q, X=0.65, Y=1.06, U=40, label='40 m/s',
                          labelpos='E', coordinates='axes',
                          fontproperties={'size': 7})
 
@@ -101,7 +101,7 @@ def figure3(sim, snap_times, ts_levs, ts_start, ts_end,
     # --- H2O maximum time series ---
     ts_times    = sim_times[ts_start:ts_end]
     ts_hours    = (ts_times - plume_inject_time) / 3600.0
-    line_colors = plt.cm.plasma(np.linspace(0.1, 0.9, len(ts_levs)))
+    line_colors = plt.cm.viridis(np.linspace(0.1, 0.9, len(ts_levs)))
 
     for ts_lev, c in zip(ts_levs, line_colors):
         h2o_max   = sim.data['h2o'][ts_start:ts_end, ts_lev, :, :].values.max(axis=(1, 2)) * 1e6
@@ -114,7 +114,7 @@ def figure3(sim, snap_times, ts_levs, ts_start, ts_end,
 
     x_inj_end = ts_hours[plume_dict['hotspot']['end_time'] - ts_start]
     ax_ts.axvline(x_inj_end, color='darkgrey', linestyle='--')
-    ax_ts.text(x_inj_end + 2.0, 0.55, 'Injection stops',
+    ax_ts.text(x_inj_end + 2.0, 0.40, 'Injection stops',
                transform=ax_ts.get_xaxis_transform(),
                va='top', ha='left', fontsize=7, color='darkgrey')
 
