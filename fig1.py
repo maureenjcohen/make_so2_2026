@@ -99,6 +99,8 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
         savename (str): Filename for saved figure.
     """
 
+    plt.rcParams.update(STYLE)
+
     plate = ccrs.PlateCarree()
     proj  = ccrs.Orthographic(central_longitude=central_lon, central_latitude=0)
 
@@ -213,6 +215,8 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
         err_abs  = (err_mean * so2_obs) / 100.0
 
         ax.set_facecolor('wheat')
+        ax.spines['top'].set_visible(True)
+        ax.spines['right'].set_visible(True)
 
         ax.errorbar(obs_dates, so2_obs.values, yerr=err_abs.values,
                     fmt='o', markerfacecolor='firebrick', markeredgecolor='k',
@@ -247,7 +251,7 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
     plot_ts(ax_long, long_start, long_end, label='e)')
     plot_ts(ax_zoom, zoom_start, zoom_end, label='f)', zoom=True)
 
-    ax_long.legend(loc='upper right', fontsize=7, markerscale=0.8)
+    ax_long.legend(loc='upper right', fontsize=7, markerscale=0.8, frameon=True)
 
     if save:
         fig.savefig(savepath + savename)
