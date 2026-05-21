@@ -94,8 +94,8 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
 
         q = ax.quiver(sim.lons[::n_quiver], sim.lats[::n_quiver],
                   -u_snap[::n_quiver, ::n_quiver], v_snap[::n_quiver, ::n_quiver],
-                  transform=plate, color='black',
-                  width=0.005, headwidth=4, scale=800)
+                  transform=plate, color='black', alpha=0.75,
+                  width=0.005, headwidth=4, scale=1000)
         # Reference arrow on the third panel
         if i == 2:
             ax.quiverkey(q, X=0.88, Y=1.01, U=100, label='100 m s$^{-1}$',
@@ -136,7 +136,8 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
     ax_w.set_xlabel('Time from injection (h)')
     ax_w.set_ylabel('Vertical wind (m s$^{-1}$)')
     ax_w.set_title('g)', loc='left', pad=2)
-    ax_w.legend(loc='upper right', fontsize=7, title='Altitude', title_fontsize=7)
+    ax_w.legend(loc='upper right', fontsize=7, title='Altitude', title_fontsize=7,
+                bbox_to_anchor=(1.0, 1.15))
 
     # --- Zonal wind time series ---
     zu_times  = sim_times[zu_start:zu_end]
@@ -152,7 +153,6 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
     ax_zu.set_xlabel('Time from injection (h)')
     ax_zu.set_ylabel('Zonal wind (m s$^{-1}$)')
     ax_zu.set_title('h)', loc='left', pad=2)
-    ax_zu.legend(loc='upper right', fontsize=7, title='Altitude', title_fontsize=7)
 
     if save:
         fig.savefig(savepath + savename)
