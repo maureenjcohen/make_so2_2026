@@ -14,21 +14,25 @@ from tools import plume_dict
 
 # %%
 def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
+            zu_start, zu_end,
             lev=35, central_lon=130,
             lat_idx=None, lon_idx=None,
             n_quiver=4, vmin=None, vmax=None,
             save=False, savepath=None, savename='figure2.pdf'):
     """
-    Figure 2: six orthographic vertical-wind globe snapshots (top two rows) and
-    a multi-level time series of vertical wind at a single gridpoint (bottom row).
+    Figure 2: six orthographic vertical-wind globe snapshots (top two rows),
+    a multi-level time series of vertical wind (row 3), and a multi-level
+    time series of zonal wind (row 4) at a single gridpoint.
 
     Args:
         sim (PlumeSim): Simulation object.
         snap_times (list of 6 int): Time indices for globe panels (3 per row,
             top row first then middle row).
-        ts_levs (list of 5 int): Vertical level indices for the time series.
-        ts_start (int): Start time index for the time series.
-        ts_end (int): End time index for the time series.
+        ts_levs (list of 5 int): Vertical level indices for both time series.
+        ts_start (int): Start time index for the vertical wind time series.
+        ts_end (int): End time index for the vertical wind time series.
+        zu_start (int): Start time index for the zonal wind time series.
+        zu_end (int): End time index for the zonal wind time series.
         lev (int): Vertical level for globe snapshots.
         central_lon (float): Central longitude for orthographic projection.
         lat_idx (int): Latitude index for time series gridpoint. Defaults to
@@ -64,14 +68,15 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
         vmax =  abs_max if vmax is None else vmax
 
     # --- Layout ---
-    fig = plt.figure(figsize=(TWO_COL, 7.0))
-    gs  = fig.add_gridspec(3, 3, height_ratios=[1, 1, 0.8], hspace=0.3, wspace=0.08)
+    fig = plt.figure(figsize=(TWO_COL, 9.0))
+    gs  = fig.add_gridspec(4, 3, height_ratios=[1, 1, 0.7, 0.7], hspace=0.35, wspace=0.08)
 
     globe_axes = []
     for row in range(2):
         for col in range(3):
             globe_axes.append(fig.add_subplot(gs[row, col], projection=proj))
-    ax_w = fig.add_subplot(gs[2, :])
+    ax_w  = fig.add_subplot(gs[2, :])
+    ax_zu = fig.add_subplot(gs[3, :])
 
     # --- Globe snapshots ---
     norm   = colors.TwoSlopeNorm(vcenter=0, vmin=vmin, vmax=vmax)
@@ -132,6 +137,22 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
     ax_w.set_ylabel('Vertical wind (m s$^{-1}$)')
     ax_w.set_title('g)', loc='left', pad=2)
     ax_w.legend(loc='upper right', fontsize=7, title='Altitude', title_fontsize=7)
+
+    # --- Zonal wind time series ---
+    zu_times  = sim_times[zu_start:zu_end]
+    zu_hours  = (zu_times - plume_inject_time) / 3600.0
+
+    for ts_lev, c in zip(ts_levs, line_colors):
+        vitu_ts   = sim.data['vitu'][zu_start:zu_end, ts_lev, lat_idx, lon_idx].values
+        alt_label = f'{sim.heights[ts_lev]:.0f} km'
+        ax_zu.plot(zu_hours, vitu_ts, color=c, linewidth=1.0, label=alt_label)
+
+    ax_zu.axvline(x_inj_end, color='darkgrey', linestyle='--')
+    ax_zu.axhline(0, color='k', linewidth=0.5, linestyle=':')
+    ax_zu.set_xlabel('Time from injection (h)')
+    ax_zu.set_ylabel('Zonal wind (m s$^{-1}$)')
+    ax_zu.set_title('h)', loc='left', pad=2)
+    ax_zu.legend(loc='upper right', fontsize=7, title='Altitude', title_fontsize=7)
 
     if save:
         fig.savefig(savepath + savename)
