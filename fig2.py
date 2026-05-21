@@ -45,16 +45,16 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
     plt.rcParams.update(STYLE)
 
     if lat_idx is None:
-        lat_idx = plume_dict['plume_1']['lat_idx']
+        lat_idx = plume_dict['hotspot']['lat_idx']
     if lon_idx is None:
-        lon_idx = plume_dict['plume_1']['lon_idx']
+        lon_idx = plume_dict['hotspot']['lon_idx']
 
     plate = ccrs.PlateCarree()
     proj  = ccrs.Orthographic(central_longitude=central_lon, central_latitude=0)
 
     height_km = np.round(sim.heights[lev], 1)
     sim_times = sim.data.time_counter.values
-    plume_inject_time = sim_times[plume_dict['plume_1']['start_time']]
+    plume_inject_time = sim_times[plume_dict['hotspot']['start_time']]
 
     # Colormap limits: symmetric about zero if not specified
     if vmin is None or vmax is None:
@@ -74,7 +74,7 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
     ax_ts = fig.add_subplot(gs[2, :])
 
     # --- Globe snapshots ---
-    norm   = colors.Normalize(vmin=vmin, vmax=vmax)
+    norm   = colors.TwoSlopeNorm(vcenter=0, vmin=vmin, vmax=vmax)
     cf     = None
     labels = ['a', 'b', 'c', 'd', 'e', 'f']
 
@@ -100,7 +100,9 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
         ax.set_title(f'{labels[i]}) {hrs:+.0f} h', loc='left', pad=3)
 
     # Shared colorbar for all globe panels, placed to the right
-    cb = fig.colorbar(cf, ax=globe_axes, orientation='vertical',
+    sm = plt.cm.ScalarMappable(norm=norm, cmap='seismic')
+    sm.set_array([])
+    cb = fig.colorbar(sm, ax=globe_axes, orientation='vertical',
                       fraction=0.025, pad=0.03, shrink=0.85)
     cb.set_label(f'w at {height_km} km (m s$^{{-1}}$)')
     cb.ax.yaxis.set_minor_locator(mticker.NullLocator())
@@ -127,3 +129,5 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
         fig.savefig(savepath + savename)
 
     plt.show()
+
+# %%

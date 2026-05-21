@@ -53,7 +53,7 @@ heights78 = [9.45306290e-03, 4.83510271e-02, 1.53046221e-01, 3.73352647e-01,
 # Dictionary of plume coordinates
 plume_dict = {'plume_1': {'name': 'so2_lev35_eqday', 'lev': 35, 'lat_idx': 49, 'lon_idx': 92, 'start_time': 4, 'end_time': 127},
               'plume_2': {'name': 'so2_lev35_eqnight', 'lev': 35, 'lat_idx': 49, 'lon_idx': 47, 'start_time': 4, 'end_time': 127},
-              'hotspot': {'name': 'hotspot', 'lev': 22, 'lat_idx': 49, 'lon_idx': 47, 'start_time': 4, 'end_time': 127}
+              'hotspot': {'name': 'hotspot', 'lev': 22, 'lat_idx': 49, 'lon_idx': 47, 'start_time': 127, 'end_time': 254}
             }
 
 name_dict = {'h2o': 'H$_2$O', 'hcl': 'HCl', 'co': 'CO', 'ocs': 'OCS', 'so2': 'SO$_2$'}
