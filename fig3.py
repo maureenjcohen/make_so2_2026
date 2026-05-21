@@ -53,7 +53,7 @@ def figure3(sim, snap_times, ts_start, ts_end,
 
     # --- Layout ---
     fig = plt.figure(figsize=(TWO_COL, 5.0))
-    gs  = fig.add_gridspec(2, 4, height_ratios=[1, 0.75], hspace=0.35, wspace=0.08)
+    gs  = fig.add_gridspec(2, 4, height_ratios=[1, 0.75], hspace=0.1, wspace=0.08)
 
     globe_axes = [fig.add_subplot(gs[0, col], projection=proj) for col in range(4)]
     ax_ts = fig.add_subplot(gs[1, :])
@@ -71,10 +71,15 @@ def figure3(sim, snap_times, ts_start, ts_end,
                     levels=np.linspace(vmin, vmax, 21),
                     norm=norm, cmap='Blues', transform=plate)
 
-        ax.quiver(sim.lons[::n_quiver], sim.lats[::n_quiver],
+        q = ax.quiver(sim.lons[::n_quiver], sim.lats[::n_quiver],
                   -u_snap[::n_quiver, ::n_quiver], v_snap[::n_quiver, ::n_quiver],
                   transform=plate, color='black', alpha=0.75,
-                  width=0.005, headwidth=4, scale=800)
+                  width=0.005, headwidth=4, scale=400)
+        # Reference arrow on the first panel
+        if i == 0:
+            ax.quiverkey(q, X=0.08, Y=0.08, U=40, label='40 m s$^{-1}$',
+                         labelpos='E', coordinates='axes',
+                         fontproperties={'size': 7})
 
         ax.set_global()
         gl = ax.gridlines(crs=plate, linewidth=0.3, color='grey', alpha=0.5, linestyle='--')
@@ -87,7 +92,7 @@ def figure3(sim, snap_times, ts_start, ts_end,
     # Shared colorbar to the right of the globe row
     sm = plt.cm.ScalarMappable(norm=norm, cmap='Blues')
     sm.set_array([])
-    cb = fig.colorbar(sm, ax=globe_axes, orientation='vertical',
+    cb = fig.colorbar(sm, ax=globe_axes, orientation='horizontal',
                       fraction=0.025, pad=0.03, shrink=0.85)
     cb.set_label(f'H$_2$O at {height_km} km (ppmv)')
     cb.ax.yaxis.set_minor_locator(mticker.NullLocator())
@@ -101,7 +106,7 @@ def figure3(sim, snap_times, ts_start, ts_end,
 
     x_inj_end = ts_hours[plume_dict['hotspot']['end_time'] - ts_start]
     ax_ts.axvline(x_inj_end, color='darkgrey', linestyle='--')
-    ax_ts.text(x_inj_end + 0.5, 0.97, 'Injection stops',
+    ax_ts.text(x_inj_end + 2.0, 0.55, 'Injection stops',
                transform=ax_ts.get_xaxis_transform(),
                va='top', ha='left', fontsize=7, color='darkgrey')
 
@@ -113,3 +118,5 @@ def figure3(sim, snap_times, ts_start, ts_end,
         fig.savefig(savepath + savename)
 
     plt.show()
+
+# %%
