@@ -8,8 +8,6 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as mticker
 import pandas as pd
-from scipy.interpolate import CubicSpline
-
 from fig1 import STYLE, TWO_COL
 
 # %%
@@ -46,13 +44,12 @@ def figure0(ds, rolling_window=240, start=0, end=None,
     so2_vals = so2_obs.values
     err_vals = err_abs.values
 
-    # Rolling mean and standard error, time-based window in days
-    smoothed      = ds_sl.so2_ppbv.weighted(w).mean(dim=['latitude', 'longitude']).rolling(
-                        start_date=rolling_window, center=False,
-                        min_periods=rolling_window // 4).mean()
-    roll          = so2_obs.rolling(start_date=rolling_window, center=True,
-                                    min_periods=rolling_window // 4)
-    smoothed_err  = roll.std() / np.sqrt(roll.count())
+    # Rolling mean and standard error, time-based window in days (pandas)
+    so2_series   = pd.Series(so2_vals, index=obs_dates)
+    roll         = so2_series.rolling(window=f'{rolling_window}D', center=False,
+                                      min_periods=rolling_window // 4)
+    smoothed     = roll.mean()
+    smoothed_err = roll.std() / np.sqrt(roll.count())
 
     # --- Layout ---
     fig = plt.figure(figsize=(TWO_COL, 5.5))
@@ -70,7 +67,7 @@ def figure0(ds, rolling_window=240, start=0, end=None,
 
     ax_top.set_yscale('log')
     ax_top.set_ylabel('SO$_2$ vmr (ppbv)')
-    ax_top.set_title('a)', loc='left', pad=2)
+    ax_top.set_title('a) SPICAV SO$_2$ observations', loc='left', pad=2)
     ax_top.spines['top'].set_visible(True)
     ax_top.spines['right'].set_visible(True)
 
@@ -80,7 +77,7 @@ def figure0(ds, rolling_window=240, start=0, end=None,
     ax_top.xaxis.set_minor_locator(mdates.MonthLocator())
 
     # --- Bottom: rolling mean with error bars ---
-    ax_bot.errorbar(ds_sl.start_date.values, smoothed.values, yerr=smoothed_err.values,
+    ax_bot.errorbar(obs_dates, smoothed.values, yerr=smoothed_err.values,
                     fmt='o', markerfacecolor='firebrick', markeredgecolor='k',
                     markersize=3, markeredgewidth=0.4, linestyle='-',
                     ecolor='k', linewidth=0.8, capsize=2, capthick=0.8,
