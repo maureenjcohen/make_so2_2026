@@ -104,7 +104,7 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
     sm = plt.cm.ScalarMappable(norm=norm, cmap='seismic')
     sm.set_array([])
     cb = fig.colorbar(sm, ax=globe_axes, orientation='vertical',
-                      fraction=0.025, pad=0.03, shrink=0.85)
+                      fraction=0.025, pad=0.03, shrink=0.85, extend='max')
     cb.set_label(f'w at {height_km} km (m s$^{{-1}}$)')
     cb.ax.yaxis.set_minor_locator(mticker.NullLocator())
 
