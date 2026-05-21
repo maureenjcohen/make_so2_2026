@@ -8,24 +8,24 @@ import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as mticker
 import pandas as pd
+from scipy.interpolate import CubicSpline
 
 from fig1 import STYLE, TWO_COL
 
 # %%
-def figure0(ds, rolling_window=12, poly_deg=2,
-            start=0, end=None,
+def figure0(ds, rolling_window=240, start=0, end=None,
             save=False, savepath=None, savename='figure0.pdf'):
     """
     Figure 0: SPICAV SO2 time series establishing decadal variability.
 
     Top row: full lat-weighted SPICAV time series with error bars and a
-    polynomial best-fit line. Bottom row: rolling mean of the same data.
+    cubic spline connecting the observations. Bottom row: rolling mean
+    with standard error envelope.
 
     Args:
         ds (xr.Dataset): SPICAV observations dataset with dims
             (start_date, latitude, longitude).
-        rolling_window (int): Number of observations for the rolling mean.
-        poly_deg (int): Degree of the polynomial best-fit line.
+        rolling_window (int): Rolling mean window in days.
         start (int): Start index into ds.start_date.
         end (int): End index into ds.start_date. Defaults to all observations.
         save (bool): Save the figure if True.
@@ -46,15 +46,20 @@ def figure0(ds, rolling_window=12, poly_deg=2,
     so2_vals = so2_obs.values
     err_vals = err_abs.values
 
-    # Polynomial best-fit in date-number space
+    # Cubic spline through observations in log space, evaluated on a dense grid
     obs_num   = mdates.date2num(obs_dates)
-    coeffs    = np.polyfit(obs_num, so2_vals, poly_deg)
-    fit_vals  = np.polyval(coeffs, obs_num)
+    cs        = CubicSpline(obs_num, np.log10(so2_vals))
+    dense_num = np.linspace(obs_num[0], obs_num[-1], 2000)
+    spline_vals = 10 ** cs(dense_num)
+    dense_dates = mdates.num2date(dense_num)
 
-    # Rolling mean (centred, point-based window)
-    so2_series   = pd.Series(so2_vals, index=obs_dates)
-    rolling_mean = so2_series.rolling(window=rolling_window, center=True,
-                                      min_periods=rolling_window // 2).mean()
+    # Rolling mean and standard error, time-based window in days
+    smoothed      = ds_sl.so2_ppbv.weighted(w).mean(dim=['latitude', 'longitude']).rolling(
+                        start_date=rolling_window, center=True,
+                        min_periods=rolling_window // 4).mean()
+    roll          = so2_obs.rolling(start_date=rolling_window, center=True,
+                                    min_periods=rolling_window // 4)
+    smoothed_err  = roll.std() / np.sqrt(roll.count())
 
     # --- Layout ---
     fig = plt.figure(figsize=(TWO_COL, 5.5))
@@ -62,19 +67,17 @@ def figure0(ds, rolling_window=12, poly_deg=2,
     ax_top = fig.add_subplot(gs[0])
     ax_bot = fig.add_subplot(gs[1])
 
-    # --- Top: time series + best-fit ---
+    # --- Top: scatter + spline connecting the dots ---
+    ax_top.plot(dense_dates, spline_vals, color='navy', linewidth=0.8, zorder=2)
     ax_top.errorbar(obs_dates, so2_vals, yerr=err_vals,
                     fmt='o', markerfacecolor='firebrick', markeredgecolor='k',
                     markersize=3, markeredgewidth=0.4,
                     ecolor='k', linewidth=0.6, capsize=2, capthick=0.8,
                     zorder=3, label='SPICAV')
-    ax_top.plot(obs_dates, fit_vals, color='navy', linewidth=1.2,
-                label=f'Degree-{poly_deg} fit', zorder=4)
 
     ax_top.set_yscale('log')
     ax_top.set_ylabel('SO$_2$ vmr (ppbv)')
     ax_top.set_title('a)', loc='left', pad=2)
-    ax_top.legend(loc='upper right', fontsize=7)
     ax_top.set_facecolor('wheat')
     ax_top.spines['top'].set_visible(True)
     ax_top.spines['right'].set_visible(True)
@@ -84,13 +87,17 @@ def figure0(ds, rolling_window=12, poly_deg=2,
     ax_top.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
     ax_top.xaxis.set_minor_locator(mdates.MonthLocator())
 
-    # --- Bottom: rolling mean ---
-    ax_bot.plot(obs_dates, rolling_mean.values, color='firebrick', linewidth=1.2)
+    # --- Bottom: rolling mean with error bars ---
+    ax_bot.errorbar(ds_sl.start_date.values, smoothed.values, yerr=smoothed_err.values,
+                    fmt='o', markerfacecolor='firebrick', markeredgecolor='k',
+                    markersize=3, markeredgewidth=0.4, linestyle='-',
+                    ecolor='k', linewidth=0.8, capsize=2, capthick=0.8,
+                    color='firebrick')
 
     ax_bot.set_yscale('log')
     ax_bot.set_ylabel('SO$_2$ vmr (ppbv)')
     ax_bot.set_xlabel('Date')
-    ax_bot.set_title(f'b) {rolling_window}-point rolling mean', loc='left', pad=2)
+    ax_bot.set_title(f'b) {rolling_window}-day rolling mean', loc='left', pad=2)
     ax_bot.set_facecolor('wheat')
     ax_bot.spines['top'].set_visible(True)
     ax_bot.spines['right'].set_visible(True)
