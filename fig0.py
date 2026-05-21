@@ -46,16 +46,9 @@ def figure0(ds, rolling_window=240, start=0, end=None,
     so2_vals = so2_obs.values
     err_vals = err_abs.values
 
-    # Cubic spline through observations in log space, evaluated on a dense grid
-    obs_num   = mdates.date2num(obs_dates)
-    cs        = CubicSpline(obs_num, np.log10(so2_vals))
-    dense_num = np.linspace(obs_num[0], obs_num[-1], 2000)
-    spline_vals = 10 ** cs(dense_num)
-    dense_dates = mdates.num2date(dense_num)
-
     # Rolling mean and standard error, time-based window in days
     smoothed      = ds_sl.so2_ppbv.weighted(w).mean(dim=['latitude', 'longitude']).rolling(
-                        start_date=rolling_window, center=True,
+                        start_date=rolling_window, center=False,
                         min_periods=rolling_window // 4).mean()
     roll          = so2_obs.rolling(start_date=rolling_window, center=True,
                                     min_periods=rolling_window // 4)
@@ -63,22 +56,21 @@ def figure0(ds, rolling_window=240, start=0, end=None,
 
     # --- Layout ---
     fig = plt.figure(figsize=(TWO_COL, 5.5))
-    gs  = fig.add_gridspec(2, 1, hspace=0.45)
+    gs  = fig.add_gridspec(2, 1, hspace=0.20)
     ax_top = fig.add_subplot(gs[0])
     ax_bot = fig.add_subplot(gs[1])
 
     # --- Top: scatter + spline connecting the dots ---
-    ax_top.plot(dense_dates, spline_vals, color='navy', linewidth=0.8, zorder=2)
     ax_top.errorbar(obs_dates, so2_vals, yerr=err_vals,
                     fmt='o', markerfacecolor='firebrick', markeredgecolor='k',
                     markersize=3, markeredgewidth=0.4,
                     ecolor='k', linewidth=0.6, capsize=2, capthick=0.8,
                     zorder=3, label='SPICAV')
+    ax_top.plot(obs_dates, so2_vals, color='grey', linestyle='--', linewidth=1.0)
 
     ax_top.set_yscale('log')
     ax_top.set_ylabel('SO$_2$ vmr (ppbv)')
     ax_top.set_title('a)', loc='left', pad=2)
-    ax_top.set_facecolor('wheat')
     ax_top.spines['top'].set_visible(True)
     ax_top.spines['right'].set_visible(True)
 
@@ -94,11 +86,9 @@ def figure0(ds, rolling_window=240, start=0, end=None,
                     ecolor='k', linewidth=0.8, capsize=2, capthick=0.8,
                     color='firebrick')
 
-    ax_bot.set_yscale('log')
     ax_bot.set_ylabel('SO$_2$ vmr (ppbv)')
     ax_bot.set_xlabel('Date')
     ax_bot.set_title(f'b) {rolling_window}-day rolling mean', loc='left', pad=2)
-    ax_bot.set_facecolor('wheat')
     ax_bot.spines['top'].set_visible(True)
     ax_bot.spines['right'].set_visible(True)
 
@@ -111,3 +101,5 @@ def figure0(ds, rolling_window=240, start=0, end=None,
         fig.savefig(savepath + savename)
 
     plt.show()
+
+# %%
