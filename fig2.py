@@ -87,10 +87,15 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
                          levels=np.linspace(vmin, vmax, 21), extend='max',
                          norm=norm, cmap='seismic', transform=plate)
 
-        ax.quiver(sim.lons[::n_quiver], sim.lats[::n_quiver],
+        q = ax.quiver(sim.lons[::n_quiver], sim.lats[::n_quiver],
                   -u_snap[::n_quiver, ::n_quiver], v_snap[::n_quiver, ::n_quiver],
                   transform=plate, color='black',
                   width=0.005, headwidth=4, scale=800)
+        # Reference arrow on the third panel
+        if i == 2:
+            ax.quiverkey(q, X=0.88, Y=1.01, U=100, label='100 m s$^{-1}$',
+                         labelpos='E', coordinates='axes',
+                         fontproperties={'size': 9})
 
         ax.set_global()
         gl = ax.gridlines(crs=plate, linewidth=0.3, color='grey', alpha=0.5, linestyle='--')
@@ -119,7 +124,7 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
         ax_w.plot(ts_hours, vitwz_ts, color=c, linewidth=1.0, label=alt_label)
     x_inj_end = ts_hours[plume_dict['hotspot']['end_time'] - ts_start]
     ax_w.axvline(x_inj_end, color='darkgrey', linestyle='--')
-    ax_w.text(x_inj_end + 0.5, 0.97, 'Injection stops',
+    ax_w.text(x_inj_end + 1.5, 0.97, 'Injection stops',
               transform=ax_w.get_xaxis_transform(),
               va='top', ha='left', fontsize=7, color='darkgrey')
     ax_w.axhline(0, color='k', linewidth=0.5, linestyle=':')
