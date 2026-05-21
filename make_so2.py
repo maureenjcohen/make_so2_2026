@@ -5,6 +5,7 @@ Plotting functions for 'Decadal sulphur dioxide variability on Venus not caused 
 # %% Filepaths
 eqday_plume = '/exomars/data/internal/working/mc5526/VPCM_decadal/Xins_eq_day.nc'
 eqnight_plume = '/exomars/data/internal/working/mc5526/VPCM_decadal/Xins_eq_night.nc'
+so2_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/so2_plume_96x96x78/Xins_so2.nc'
 chem_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/so2_plume_96x96x78/Xins_chem.nc'
 hotspot_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/hotspot_96x96x50/Xins_pillar.nc'
 retrievals = '/exomars/projects/mc5526/VPCM_decadal_so2/netcdfs/SO2_lons.nc'
@@ -37,7 +38,7 @@ if __name__ == "__main__":
     # %%
     # Create PlumeSim object and load data for plume run
     eqday_sim = PlumeSim(venusdict, plume_dict, 'equatorial dayside plume')
-    eqday_sim.load_file(eqday_plume)
+    eqday_sim.load_file(so2_plume)
     eqday_sim.set_resolution()
 
     # %%
