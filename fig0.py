@@ -61,9 +61,6 @@ def figure0(ds, rolling_window=240, start=0, end=None,
                                    min_periods=rolling_window // 4)
     smoothed_err = roll.std() / np.sqrt(roll.count())
 
-    smoothed_vals     = smoothed.values.astype(float)
-    smoothed_err_vals = smoothed_err.values.astype(float)
-
     # --- Layout ---
     fig = plt.figure(figsize=(TWO_COL, 5.5))
     gs  = fig.add_gridspec(2, 1, hspace=0.20)
@@ -90,9 +87,9 @@ def figure0(ds, rolling_window=240, start=0, end=None,
     ax_top.xaxis.set_minor_locator(mdates.MonthLocator())
 
     # --- Bottom: rolling mean with error bars ---
-    ax_bot.errorbar(obs_dates, smoothed_vals, yerr=smoothed_err_vals,
+    ax_bot.errorbar(obs_dates, smoothed.values, yerr=smoothed_err.values,
                     fmt='o', markerfacecolor='firebrick', markeredgecolor='k',
-                    markersize=3, markeredgewidth=0.4, linestyle='none',
+                    markersize=3, markeredgewidth=0.4, linestyle='--', color='grey',
                     ecolor='k', linewidth=1.0, capsize=2, capthick=0.8)
 
     ax_bot.set_ylabel('SO$_2$ vmr (ppbv)')
@@ -108,11 +105,13 @@ def figure0(ds, rolling_window=240, start=0, end=None,
 
     # --- Rising slope annotation on subplot b) ---
     if peak_search_before is not None:
+        smoothed_vals = smoothed.values
+
         valid_mask  = ~np.isnan(smoothed_vals)
         first_valid = np.where(valid_mask)[0][0]
 
         before_mask = obs_dates < pd.Timestamp(peak_search_before)
-        search_mask = valid_mask & before_mask
+        search_mask = valid_mask & before_mask.values
         peak_idx    = np.where(search_mask)[0][np.argmax(smoothed_vals[search_mask])]
 
         start_ann = obs_dates[first_valid]
@@ -126,18 +125,14 @@ def figure0(ds, rolling_window=240, start=0, end=None,
         ax_bot.plot([start_ann, peak_ann],
                     [smoothed_vals[first_valid] - slope_offset,
                      smoothed_vals[peak_idx]    - slope_offset],
-                    color='grey', linewidth=1.0, linestyle='--', alpha=0.6, zorder=5)
+                    color='k', linewidth=1.0, linestyle='-', zorder=5)
 
-        # Double-headed arrow + duration label for the rise (placed above the curve)
-        rise_shift = 30  # days left
-        ax_bot.annotate('', xy=(mdates.date2num(peak_ann) - rise_shift, 0.93),
-                        xytext=(mdates.date2num(start_ann) - rise_shift, 0.93),
+        # Double-headed arrow + duration label for the rise
+        ax_bot.annotate('', xy=(peak_ann, 0.08), xytext=(start_ann, 0.08),
                         xycoords=trans, textcoords=trans,
                         arrowprops=dict(arrowstyle='<->', color='k', lw=0.8))
-        ax_bot.text(mdates.date2num(mid_ann) - rise_shift, 0.88,
-                    f'{duration}\ndays',
-                    transform=trans, ha='center', va='top', fontsize=8,
-                    fontweight='bold')
+        ax_bot.text(mid_ann, 0.13, f'{duration} days ({duration / 365.25:.1f} yr)',
+                    transform=trans, ha='center', va='bottom', fontsize=7)
 
         # --- Declining slope: peak to first crossing below trough_threshold ---
         if trough_threshold is not None:
@@ -154,17 +149,15 @@ def figure0(ds, rolling_window=240, start=0, end=None,
                 ax_bot.plot([peak_ann, trough_ann],
                             [smoothed_vals[peak_idx]   - slope_offset,
                              smoothed_vals[trough_idx] - slope_offset],
-                            color='grey', linewidth=1.0, linestyle='--', alpha=0.6, zorder=5)
+                            color='k', linewidth=1.0, linestyle='-', zorder=5)
 
                 # Double-headed arrow + duration label for the decline
-                ax_bot.annotate('', xy=(mdates.date2num(trough_ann), 0.08),
-                                xytext=(mdates.date2num(peak_ann), 0.08),
+                ax_bot.annotate('', xy=(trough_ann, 0.08), xytext=(peak_ann, 0.08),
                                 xycoords=trans, textcoords=trans,
                                 arrowprops=dict(arrowstyle='<->', color='k', lw=0.8))
-                ax_bot.text(mdates.date2num(mid_dt) - 200, 0.13,
-                            f'{duration_dt} days',
-                            transform=trans, ha='center', va='bottom', fontsize=8,
-                            fontweight='bold')
+                ax_bot.text(mid_dt, 0.13,
+                            f'{duration_dt} days ({duration_dt / 365.25:.1f} yr)',
+                            transform=trans, ha='center', va='bottom', fontsize=7)
 
     if save:
         fig.savefig(savepath + savename)
