@@ -10,7 +10,7 @@ from matplotlib import colors
 import cartopy.crs as ccrs
 
 from fig1 import STYLE, TWO_COL
-from tools import plume_dict
+
 
 # %%
 def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
@@ -49,16 +49,16 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
     plt.rcParams.update(STYLE)
 
     if lat_idx is None:
-        lat_idx = plume_dict['hotspot']['lat_idx']
+        lat_idx = sim.plumes['lat_idx']
     if lon_idx is None:
-        lon_idx = plume_dict['hotspot']['lon_idx']
+        lon_idx = sim.plumes['lon_idx']
 
     plate = ccrs.PlateCarree()
     proj  = ccrs.Orthographic(central_longitude=central_lon, central_latitude=0)
 
     height_km = np.round(sim.heights[lev], 1)
     sim_times = sim.data.time_counter.values
-    plume_inject_time = sim_times[plume_dict['hotspot']['start_time']]
+    plume_inject_time = sim_times[sim.plumes['start_time']]
 
     # Colormap limits: symmetric about zero if not specified
     if vmin is None or vmax is None:
@@ -127,7 +127,7 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
         vitwz_ts  = sim.data['vitwz'][ts_start:ts_end, ts_lev, lat_idx, lon_idx].values
         alt_label = f'{sim.heights[ts_lev]:.0f} km'
         ax_w.plot(ts_hours, vitwz_ts, color=c, linewidth=1.0, label=alt_label)
-    x_inj_end = ts_hours[plume_dict['hotspot']['end_time'] - ts_start]
+    x_inj_end = ts_hours[sim.plumes['end_time'] - ts_start]
     ax_w.axvline(x_inj_end, color='darkgrey', linestyle='--')
     ax_w.text(x_inj_end + 1.5, 0.97, 'Injection stops',
               transform=ax_w.get_xaxis_transform(),

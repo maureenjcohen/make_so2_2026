@@ -80,7 +80,7 @@ def figure0(ds, rolling_window=240, start=0, end=None,
 
     ax_top.set_yscale('log')
     ax_top.set_ylabel('SO$_2$ vmr (ppbv)')
-    ax_top.set_title('a) SPICAV SO$_2$ observations', loc='left', pad=2)
+    ax_top.set_title('a) SPICAV SO$_2$ observations, latitude-weighted mean', loc='left', pad=2)
     ax_top.spines['top'].set_visible(True)
     ax_top.spines['right'].set_visible(True)
 

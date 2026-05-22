@@ -11,7 +11,7 @@ from matplotlib import colors
 import pandas as pd
 import cartopy.crs as ccrs
 
-from tools import plume_dict, local_time
+from tools import local_time
 
 # %%
 # --- Publication style ---
@@ -134,7 +134,7 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
         lat_weights = np.cos(np.deg2rad(sim.lats[lat_mask]))
         sim_so2_track[t_idx] = np.average(peak_col, weights=lat_weights)
 
-    plume_inject_time = sim_times[plume_dict['plume_1']['start_time']]
+    plume_inject_time = sim_times[sim.plumes['start_time']]
     anchor_date       = pd.Timestamp(ds.start_date.values[plume_anchor])
 
     # Real-world date for every simulation timestep
@@ -145,7 +145,7 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
     # Left column: 4 globe panels + shared colorbar below.
     # Right column: long time series (top) + zoomed time series (bottom).
     fig      = plt.figure(figsize=(TWO_COL, 6.2))
-    outer_gs = fig.add_gridspec(1, 2, width_ratios=[0.82, 1.18], wspace=0.4)
+    outer_gs = fig.add_gridspec(1, 2, width_ratios=[0.82, 1.18], wspace=0.2)
     left_gs  = outer_gs[0].subgridspec(5, 1, height_ratios=[1, 1, 1, 1, 0.18], hspace=0.25)
     right_gs = outer_gs[1].subgridspec(2, 1, hspace=0.45)
 
@@ -185,10 +185,14 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
         gl.ylocator = mticker.FixedLocator([-60, -30, 0, 30, 60])
 
         local_times = local_time(sim, time_slice=t, silent='yes')
-        term_ind = local_times.index(6.0) # Pick 6.0 for evening terminator because
-        # cartopy doesn't know the VPCM's longitude axis is backwards (trust me)
-        term_lon = sim.lons[term_ind]
-        ax.plot([term_lon, term_lon], [-90,90], transform=plate, color='k', linewidth=1,
+        term_ind_morn = local_times.index(6.0) # Morning term
+        term_ind_eve = local_times.index(18.0) # Evening term
+
+        term_lon_morn = sim.lons[term_ind_morn]
+        term_lon_eve = sim.lons[term_ind_eve]
+        ax.plot([term_lon_morn, term_lon_morn], [-90,90], transform=plate, color='k', linewidth=1,
+                linestyle='dashed', zorder=5)
+        ax.plot([term_lon_eve, term_lon_eve], [-90,90], transform=plate, color='k', linewidth=1,
                 linestyle='dashed', zorder=5)
 
         # Time since plume injection

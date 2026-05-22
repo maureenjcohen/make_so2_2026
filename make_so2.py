@@ -5,9 +5,9 @@ Plotting functions for 'Decadal sulphur dioxide variability on Venus not caused 
 # %% Filepaths
 eqday_plume = '/exomars/data/internal/working/mc5526/VPCM_decadal/Xins_eq_day.nc'
 eqnight_plume = '/exomars/data/internal/working/mc5526/VPCM_decadal/Xins_eq_night.nc'
-so2_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/so2_plume_96x96x78/Xins_so2.nc'
+so2_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/so2_plume_96x96x78/Xins_so2_big.nc'
 chem_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/so2_plume_96x96x78/Xins_chem.nc'
-hotspot_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/hotspot_96x96x50/Xins_pillar.nc'
+hotspot_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/hotspot_96x96x50/Xins_hotspot1.nc'
 retrievals = '/exomars/projects/mc5526/VPCM_decadal_so2/netcdfs/SO2_lons.nc'
 savedir = '/exomars/projects/mc5526/VPCM_decadal_so2/scratch_plots/'
 filetype = 'png'
@@ -24,8 +24,11 @@ import matplotlib.animation as animation
 from classes import PlumeSim
 from plotting_functions import dispersal_time, dispersal_map, animate_chem_plume, summ_stats, time_series
 from plotting_functions import data_compare, sensitivity_test, marcq_reproduce
-from fig1 import figure1, figure2, figure3, figure0, STYLE
-from tools import venusdict, plume_dict, calculate_so2_mass, name_dict
+from fig1 import figure1, STYLE
+from fig2 import figure2 
+from fig3 import figure3 
+from fig0 import figure0
+from tools import venusdict, plume_dict_master, calculate_so2_mass, name_dict
 
 
 # %% Main code block
@@ -36,40 +39,66 @@ if __name__ == "__main__":
     ds_retrievals = xr.open_dataset(retrievals)
 
     # %%
-    figure0(ds_retrievals, rolling_window=60)
+    figure0(ds_retrievals, rolling_window=60, 
+            peak_search_before='2008-01-01', trough_threshold=30, 
+            save=True, savepath=savedir, savename='fig0_ref_30.png')
 
     # %%
     # Create PlumeSim object and load data for plume run
-    so2 = PlumeSim(venusdict, plume_dict, 'equatorial dayside plume')
-    so2.load_file(so2_plume)
-    so2.set_resolution()
+    eqday = PlumeSim(venusdict, plume_dict_master['plume_1'], 'equatorial dayside plume')
+    eqday.load_file(eqday_plume)
+    eqday.set_resolution()
 
     # %%
-    figure1(so2, ds_retrievals, snap_times=[8, 158, 208, 278], 
+    figure1(eqday, ds_retrievals, snap_times=[8, 158, 208, 278], 
             long_start=0, long_end=100, zoom_start=38, zoom_end=72, 
-            plume_anchor=41, lev=35, central_lon=130)
+            plume_anchor=39, lev=35, central_lon=130, save=True,
+            savepath=savedir, savename='fig1_ref.png')
     
+    # %%
+    eqday.close()
+    del eqday
+    
+    # %%
+    # Create PlumeSim object and load data for plume run
+    so2 = PlumeSim(venusdict, plume_dict_master['so2'], 'equatorial dayside plume')
+    so2.load_file(so2_plume)
+    so2.set_resolution()
+    
+    # %%
+    figure1(so2, ds_retrievals, snap_times=[250, 316, 404, 608], 
+            long_start=0, long_end=334, zoom_start=38, zoom_end=72, 
+            plume_anchor=38, lev=35, central_lon=-40, save=True,
+            savepath=savedir, savename='fig1_ref_big.png')
+
     # %%
     so2.close()
     del so2
 
     # %%
-    pillar = PlumeSim(venusdict, plume_dict, 'pillar of fire')
-    pillar.load_file(hotspot_plume)
-    pillar.set_resolution()
+    hotspot = PlumeSim(venusdict, plume_dict_master['hotspot'], 'pillar of fire')
+    hotspot.load_file(hotspot_plume)
+    hotspot.set_resolution()
     
-    # %%
-    figure2(pillar, snap_times=[130, 196, 230, 256, 300, 368], 
+    # %% Late start
+    figure2(hotspot, snap_times=[130, 196, 230, 256, 300, 368], 
             ts_levs=[22, 28, 34, 40], ts_start=100, ts_end=700, 
             lev=22, central_lon=0, lat_idx=49, lon_idx=47, 
             vmin=-1.2, vmax=3.0)
+    
+    # %% Early start
+    figure2(hotspot, snap_times=[10, 30, 90, 150, 312, 508], 
+            ts_levs=[22, 28, 34, 40], ts_start=0, ts_end=700, 
+            zu_start=0, zu_end=1000,
+            lev=35, central_lon=0, lat_idx=49, lon_idx=47, 
+            vmin=-2.0, vmax=3.0, save=True, savepath=savedir, savename='fig2_ref.png')
 
     # %%
-    pillar.close()
-    del pillar
+    hotspot.close()
+    del hotspot
 
     # %%
-    chem = PlumeSim(venusdict, plume_dict, 'potential absorber plume')
+    chem = PlumeSim(venusdict, plume_dict_master['h2o'], 'potential absorber plume')
     chem.load_file(chem_plume)
     chem.set_resolution()
 
