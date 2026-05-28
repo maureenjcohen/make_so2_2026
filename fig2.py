@@ -18,6 +18,7 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
             lev=35, central_lon=130,
             lat_idx=None, lon_idx=None,
             n_quiver=4, vmin=None, vmax=None,
+            zu_anomaly=False,
             save=False, savepath=None, savename='figure2.pdf'):
     """
     Figure 2: six orthographic vertical-wind globe snapshots (top two rows),
@@ -42,6 +43,8 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
         n_quiver (int): Quiver subsampling interval.
         vmin, vmax (float): Colormap limits for vitwz (m/s). If None, set
             symmetrically from the max absolute value across all six snapshots.
+        zu_anomaly (bool): If True, plot the zonal wind deviation from the
+            long-term mean (mean over zu_start:zu_end) instead of raw values.
         save (bool): Save the figure if True.
         savepath (str): Directory to save.
         savename (str): Filename for saved figure.
@@ -145,13 +148,16 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
 
     for ts_lev, c in zip(ts_levs, line_colors):
         vitu_ts   = sim.data['vitu'][zu_start:zu_end, ts_lev, lat_idx, lon_idx].values
+        if zu_anomaly:
+            vitu_ts = vitu_ts - vitu_ts.mean()
         alt_label = f'{sim.heights[ts_lev]:.0f} km'
         ax_zu.plot(zu_hours, vitu_ts, color=c, linewidth=1.0, label=alt_label)
 
     ax_zu.axvline(x_inj_end, color='darkgrey', linestyle='--')
     ax_zu.axhline(0, color='k', linewidth=0.5, linestyle=':')
     ax_zu.set_xlabel('Time from injection (h)')
-    ax_zu.set_ylabel('Zonal wind (m s$^{-1}$)')
+    ax_zu.set_ylabel('Zonal wind anomaly (m s$^{-1}$)' if zu_anomaly
+                     else 'Zonal wind (m s$^{-1}$)')
     ax_zu.set_title('h)', loc='left', pad=2)
 
     if save:
