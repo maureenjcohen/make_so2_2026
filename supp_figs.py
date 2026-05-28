@@ -5,6 +5,7 @@ Supplementary and Materials & Methods figures for
 """
 # %%
 import numpy as np
+import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as mticker
@@ -181,6 +182,117 @@ def fig_logistic(sim, L=115, K=760, x0=20, k=0.2,
     ax.set_ylabel('Level index')
     ax.set_title('Temperature profile', loc='left', pad=2)
     ax.legend(loc='upper right', fontsize=7)
+
+    if save:
+        fig.savefig(savepath + savename)
+
+    plt.show()
+
+# %%
+def fig_orbit_summary(ds, orbit_idx,
+                      save=False, savepath=None, savename='fig_orbit_summary.pdf'):
+    """
+    Supplementary figure: SPICAV SO2 profile for a single orbit.
+
+    Plots SO2 abundance vs latitude for a specific orbit, with points coloured
+    by the secondary spatial coordinate (longitude or local solar time).
+
+    Args:
+        ds (xr.Dataset): SPICAV SO2 dataset with start_date, latitude, and
+            either longitude or local_solar_time as dimensions.
+        orbit_idx (int): Positional index into the start_date dimension.
+        save (bool): Save the figure if True.
+        savepath (str): Directory to save.
+        savename (str): Filename for saved figure.
+    """
+    plt.rcParams.update(STYLE)
+
+    # --- Select orbit and extract metadata ---
+    orbit_ds = ds.isel(start_date=orbit_idx)
+    orb_num  = int(orbit_ds.vex_orbit.values)
+    day      = pd.to_datetime(orbit_ds.start_date.values).strftime('%Y-%m-%d')
+
+    # --- Determine secondary coordinate (longitude or LST) ---
+    if 'longitude' in ds.dims:
+        x_coord = 'longitude'
+        x_label = 'Longitude (°)'
+    elif 'local_solar_time' in ds.dims:
+        x_coord = 'local_solar_time'
+        x_label = 'Local solar time (hr)'
+    else:
+        raise KeyError("Dataset must contain 'longitude' or 'local_solar_time' as a dimension.")
+
+    # --- Build clean dataframe for this orbit ---
+    df_plot = orbit_ds.to_dataframe().dropna(subset=['so2_ppbv']).reset_index()
+
+    if df_plot.empty:
+        print(f"Orbit {orb_num} (index {orbit_idx}) contains no valid data.")
+        return
+
+    fig, ax = plt.subplots(figsize=(ONE_COL, 4.0))
+
+    sc = ax.scatter(df_plot['so2_ppbv'], df_plot['latitude'],
+                    c=df_plot[x_coord], cmap='plasma',
+                    edgecolor='k', linewidths=0.3, alpha=0.8, s=20)
+    fig.colorbar(sc, ax=ax, label=x_label)
+
+    ax.set_xlabel('SO$_2$ (ppbv)')
+    ax.set_ylabel('Latitude (°)')
+    ax.set_title(f'SPICAV orbit {orb_num}: SO$_2$ profile ({day})',
+                 loc='left', pad=2)
+    ax.grid(True, linestyle=':', alpha=0.5)
+
+    if save:
+        fig.savefig(savepath + savename)
+
+    plt.show()
+
+# %%
+def fig_orbit_path(ds, orbit_idx,
+                   save=False, savepath=None, savename='fig_orbit_path.pdf'):
+    """
+    Supplementary figure: SPICAV orbit spatial track coloured by SO2 abundance.
+
+    Plots the spatial path of a single orbit (latitude vs longitude or local
+    solar time), with scatter points coloured by SO2 mixing ratio.
+
+    Args:
+        ds (xr.Dataset): SPICAV SO2 dataset with start_date, latitude, and
+            either longitude or local_solar_time as dimensions.
+        orbit_idx (int): Positional index into the start_date dimension.
+        save (bool): Save the figure if True.
+        savepath (str): Directory to save.
+        savename (str): Filename for saved figure.
+    """
+    plt.rcParams.update(STYLE)
+
+    # --- Select orbit and extract metadata ---
+    orbit_ds = ds.isel(start_date=orbit_idx)
+    orb_num  = int(orbit_ds.vex_orbit.values)
+
+    # --- Determine coordinate type ---
+    if 'local_solar_time' in ds.dims:
+        x_dim   = 'local_solar_time'
+        x_label = 'Local solar time (hr)'
+    else:
+        x_dim   = 'longitude'
+        x_label = 'Longitude (°)'
+
+    # --- Build clean dataframe for this orbit ---
+    df_orbit = orbit_ds.to_dataframe().dropna(subset=['so2_ppbv']).reset_index()
+
+    fig, ax = plt.subplots(figsize=(ONE_COL, 4.0))
+
+    sc = ax.scatter(df_orbit[x_dim], df_orbit['latitude'],
+                    c=df_orbit['so2_ppbv'], cmap='magma',
+                    s=30, edgecolor='k', linewidths=0.3)
+    fig.colorbar(sc, ax=ax, label='SO$_2$ (ppbv)')
+
+    ax.set_xlabel(x_label)
+    ax.set_ylabel('Latitude (°)')
+    ax.set_title(f'SPICAV orbit {orb_num}: spatial track',
+                 loc='left', pad=2)
+    ax.grid(True, linestyle=':', alpha=0.3)
 
     if save:
         fig.savefig(savepath + savename)
