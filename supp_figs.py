@@ -138,18 +138,19 @@ def fig_temp_profile(sim, t=0,
     plt.show()
 
 # %%
-def fig_logistic(levs=22, L=115, K=760, x0=20, k=0.2,
+def fig_logistic(sim, L=115, K=760, x0=20, k=0.2,
                  save=False, savepath=None, savename='fig_logistic.pdf'):
     """
-    Supplementary figure: logistic decay temperature profile.
+    Supplementary figure: logistic decay curve vs. simulated temperature profile.
 
-    Plots the output of logistic_decay() — a smooth transition from K (bottom)
-    to L (top) — with level index on the y-axis and temperature on the x-axis.
+    Plots two lines on the same axes (level index on y, temperature on x):
+      - Global area-weighted long-term mean temperature from the simulation.
+      - Logistic decay curve with the given parameters.
 
     Args:
-        levs (int): Number of vertical levels.
-        L (float): Temperature at the top level (K).
-        K (float): Temperature at the bottom level (K).
+        sim (PlumeSim): Simulation object.
+        L (float): Temperature at the top level (K) for the logistic curve.
+        K (float): Temperature at the bottom level (K) for the logistic curve.
         x0 (float): Level index at the midpoint of the transition.
         k (float): Steepness of the transition.
         save (bool): Save the figure if True.
@@ -158,16 +159,28 @@ def fig_logistic(levs=22, L=115, K=760, x0=20, k=0.2,
     """
     plt.rcParams.update(STYLE)
 
+    levs   = len(sim.heights)
     levels = np.arange(levs)
-    temp   = logistic_decay(levs=levs, L=L, K=K, x0=x0, k=k)
+
+    # --- Global area-weighted long-term mean temperature ---
+    aire     = sim.data['aire'].values  # (lat, lon)
+    temp_4d  = sim.data['temp'].values  # (time, lev, lat, lon)
+    temp_area = (temp_4d * aire[np.newaxis, np.newaxis, :, :]).sum(axis=(2, 3)) / aire.sum()
+    temp_mean = temp_area.mean(axis=0)  # (lev,)
+
+    # --- Logistic decay curve ---
+    temp_logistic = logistic_decay(levs=levs, L=L, K=K, x0=x0, k=k)
 
     fig, ax = plt.subplots(figsize=(ONE_COL, 4.0))
 
-    ax.plot(temp, levels, color='firebrick', linewidth=1.0)
+    ax.plot(temp_mean,     levels, color='steelblue',  linewidth=1.0, label='Simulated mean')
+    ax.plot(temp_logistic, levels, color='firebrick',  linewidth=1.0,
+            linestyle='--', label='Logistic decay')
 
     ax.set_xlabel('Temperature (K)')
     ax.set_ylabel('Level index')
-    ax.set_title('Logistic decay temperature profile', loc='left', pad=2)
+    ax.set_title('Temperature profile', loc='left', pad=2)
+    ax.legend(loc='upper right', fontsize=7)
 
     if save:
         fig.savefig(savepath + savename)
