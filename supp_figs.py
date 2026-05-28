@@ -85,3 +85,55 @@ def fig_so2_prof(sim, times=None, t_start=None, t_end=None,
     plt.show()
 
 # %%
+def fig_temp_profile(sim, t=0,
+                     ylim_bottom=None, ylim_top=None,
+                     save=False, savepath=None, savename='fig_temp_profile.pdf'):
+    """
+    Supplementary figure: latitude-altitude cross-section of temperature.
+
+    Plots temperature at a single timestep and the longitude index specified
+    in the simulation's plume_dict (sim.plumes['lon_idx']), as a filled
+    contour plot with latitude on the x-axis and altitude on the y-axis.
+
+    Args:
+        sim (PlumeSim): Simulation object.
+        t (int): Time index to plot. Defaults to 0.
+        ylim_bottom (float): Lower limit of the altitude axis in km.
+        ylim_top (float): Upper limit of the altitude axis in km.
+        save (bool): Save the figure if True.
+        savepath (str): Directory to save.
+        savename (str): Filename for saved figure.
+    """
+    plt.rcParams.update(STYLE)
+
+    lon_idx = sim.plumes['lon_idx']
+    lon_val = sim.lons[lon_idx]
+
+    temp = sim.data['temp'][t, :, :, lon_idx].values  # (lev, lat)
+
+    fig, ax = plt.subplots(figsize=(ONE_HALF_COL, 4.0))
+
+    cf = ax.contourf(sim.lats, sim.heights, temp,
+                     levels=20, cmap='inferno')
+
+    cb = fig.colorbar(cf, ax=ax, orientation='vertical', pad=0.03)
+    cb.set_label('Temperature (K)')
+    cb.ax.yaxis.set_minor_locator(mticker.NullLocator())
+
+    ax.set_xlabel('Latitude (°)')
+    ax.set_ylabel('Altitude (km)')
+    ax.set_title(f'Temperature, lon = {lon_val:.0f}°',
+                 loc='left', pad=2)
+    ax.set_xlim(sim.lats[0], sim.lats[-1])
+    ax.xaxis.set_major_locator(mticker.MultipleLocator(30))
+    ax.xaxis.set_minor_locator(mticker.MultipleLocator(10))
+
+    if ylim_bottom is not None or ylim_top is not None:
+        ax.set_ylim(bottom=ylim_bottom, top=ylim_top)
+
+    if save:
+        fig.savefig(savepath + savename)
+
+    plt.show()
+
+# %%
