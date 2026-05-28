@@ -127,13 +127,18 @@ def calculate_so2_mass(sim_object, vmr_ppm=0.195):
     R = 8.31446      # Ideal gas constant (J / mol*K)
     M_SO2 = 0.06406   # Molar mass of SO2 in kg/mol
     
+    lev       = sim_object.plumes['lev']
+    lat_idx   = sim_object.plumes['lat_idx']
+    lon_idx   = sim_object.plumes['lon_idx']
+    start_time = sim_object.plumes['start_time']
+
     # 2. Conversions to SI units
-    area_m2 = sim_object.data['aire'][plume_dict['plume_7']['lat_idx'], plume_dict['plume_7']['lon_idx']] # m2
-    volume_m3 = area_m2 * (sim_object.heights[plume_dict['plume_7']['lev']] * 1000 - sim_object.heights[plume_dict['plume_7']['lev']-1] * 1000)  # m3
-    pressure_pa = sim_object.data['pres'][plume_dict['plume_7']['start_time'], plume_dict['plume_7']['lev'], plume_dict['plume_7']['lat_idx'], plume_dict['plume_7']['lon_idx']] # Pascals
-    
+    area_m2    = sim_object.data['aire'][lat_idx, lon_idx]  # m2
+    volume_m3  = area_m2 * (sim_object.heights[lev] * 1000 - sim_object.heights[lev - 1] * 1000)  # m3
+    pressure_pa = sim_object.data['pres'][start_time, lev, lat_idx, lon_idx]  # Pascals
+
     # 3. Calculate total moles of gas (n = PV / RT)
-    n_total = (pressure_pa * volume_m3) / (R * sim_object.data['temp'][plume_dict['plume_7']['start_time'], plume_dict['plume_7']['lev'], plume_dict['plume_7']['lat_idx'], plume_dict['plume_7']['lon_idx']])
+    n_total = (pressure_pa * volume_m3) / (R * sim_object.data['temp'][start_time, lev, lat_idx, lon_idx])
     # 4. Calculate moles of SO2
     n_so2 = n_total * (vmr_ppm/1e6)  # Convert ppm to fraction
     
