@@ -10,6 +10,7 @@ import matplotlib.dates as mdates
 import matplotlib.ticker as mticker
 
 from fig1 import STYLE, TWO_COL, ONE_COL, ONE_HALF_COL
+from tools import logistic_decay
 
 # %%
 def fig_so2_prof(sim, times=None, t_start=None, t_end=None,
@@ -130,6 +131,43 @@ def fig_temp_profile(sim, t=0,
 
     if ylim_bottom is not None or ylim_top is not None:
         ax.set_ylim(bottom=ylim_bottom, top=ylim_top)
+
+    if save:
+        fig.savefig(savepath + savename)
+
+    plt.show()
+
+# %%
+def fig_logistic(levs=22, L=115, K=760, x0=20, k=0.2,
+                 save=False, savepath=None, savename='fig_logistic.pdf'):
+    """
+    Supplementary figure: logistic decay temperature profile.
+
+    Plots the output of logistic_decay() — a smooth transition from K (bottom)
+    to L (top) — with level index on the y-axis and temperature on the x-axis.
+
+    Args:
+        levs (int): Number of vertical levels.
+        L (float): Temperature at the top level (K).
+        K (float): Temperature at the bottom level (K).
+        x0 (float): Level index at the midpoint of the transition.
+        k (float): Steepness of the transition.
+        save (bool): Save the figure if True.
+        savepath (str): Directory to save.
+        savename (str): Filename for saved figure.
+    """
+    plt.rcParams.update(STYLE)
+
+    levels = np.arange(levs)
+    temp   = logistic_decay(levs=levs, L=L, K=K, x0=x0, k=k)
+
+    fig, ax = plt.subplots(figsize=(ONE_COL, 4.0))
+
+    ax.plot(temp, levels, color='firebrick', linewidth=1.0)
+
+    ax.set_xlabel('Temperature (K)')
+    ax.set_ylabel('Level index')
+    ax.set_title('Logistic decay temperature profile', loc='left', pad=2)
 
     if save:
         fig.savefig(savepath + savename)
