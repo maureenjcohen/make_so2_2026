@@ -1,2 +1,6 @@
 examples/*
 data/*
+
+# Files
+*.txt
+*.pdf
