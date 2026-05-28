@@ -73,9 +73,6 @@ if __name__ == "__main__":
             plume_anchor=38, lev=35, central_lon=-40, save=True,
             savepath=savedir, savename='fig1_ref_big.png')
 
-    # %%
-    so2.close()
-    del so2
 
     # %%
     hotspot = PlumeSim(venusdict, plume_dict_master['hotspot'], 'pillar of fire')
@@ -96,10 +93,6 @@ if __name__ == "__main__":
             vmin=-2.0, vmax=3.0, save=True, savepath=savedir, savename='fig2_ref.png')
 
     # %%
-    hotspot.close()
-    del hotspot
-
-    # %%
     chem = PlumeSim(venusdict, plume_dict_master['h2o'], 'potential absorber plume')
     chem.load_file(chem_plume)
     chem.set_resolution()
@@ -116,26 +109,21 @@ if __name__ == "__main__":
     print(f'SO2 mass in plume at 70 km: {so2_mass_kg:.2f} kg')
 
     # %%
-    eqnight_sim = PlumeSim(venusdict, plume_dict, 'equatorial nightside plume')
+    eqnight_sim = PlumeSim(venusdict, plume_dict_master['plume_2'], 'equatorial nightside plume')
     eqnight_sim.load_file(eqnight_plume)
     eqnight_sim.set_resolution()
 
     # %%
     animate_chem_plume(eqnight_sim, lev=35, keys=['so2'], name_dict=name_dict, t0=0, tf=1200, qscale=5, log=False, savepath=savedir, savename='eqnight_plume_no_log', snapshot=100)
 
-    # %% Reload so2 plume for supplementary figures and animations
-    so2 = PlumeSim(venusdict, plume_dict_master['so2'], 'equatorial dayside plume')
-    so2.load_file(so2_plume)
-    so2.set_resolution()
-
     # %%
     fig_so2_prof(so2, save=True, savepath=savedir, savename='figS_so2_prof.pdf')
 
     # %%
-    fig_temp_profile(so2, save=True, savepath=savedir, savename='figS_temp_profile.pdf')
+    fig_temp_profile(hotspot, save=True, savepath=savedir, savename='figS_temp_profile.pdf')
 
     # %%
-    fig_logistic(so2, save=True, savepath=savedir, savename='figS_logistic.pdf')
+    fig_logistic(hotspot, save=True, savepath=savedir, savename='figS_logistic.pdf')
 
     # %%
     fig_orbit_summary(ds_retrievals, orbit_idx=0,
@@ -152,19 +140,10 @@ if __name__ == "__main__":
           save=True, savepath=savedir, savename='anim1_so2.mp4')
 
     # %%
-    hotspot = PlumeSim(venusdict, plume_dict_master['hotspot'], 'pillar of fire')
-    hotspot.load_file(hotspot_plume)
-    hotspot.set_resolution()
-
-    # %%
     anim2(hotspot, t_start=plume_dict_master['hotspot']['start_time'],
           t_end=plume_dict_master['hotspot']['end_time'],
           lev=22, central_lon=0,
           save=True, savepath=savedir, savename='anim2_vwind.mp4')
-
-    # %%
-    hotspot.close()
-    del hotspot
 
     # %%
     anim3(chem, t_start=plume_dict_master['h2o']['start_time'],
@@ -175,4 +154,10 @@ if __name__ == "__main__":
     # %%
     so2.close()
     del so2
+
+    hotspot.close()
+    del hotspot
+
+    chem.close()
+    del chem
 # %%
