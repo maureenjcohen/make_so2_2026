@@ -197,4 +197,48 @@ def local_time(plobject, time_slice=-1, silent='no'):
     new_hours = list(np.roll(hours, roll_step))
 
     return new_hours
+
+# %%
+def spicav_max_so2(ds):
+    """
+    Find the maximum SO2 abundance in a SPICAV dataset.
+
+    Returns the peak SO2 value and its associated orbit number, date,
+    latitude, and spatial coordinate (longitude or local solar time).
+
+    Args:
+        ds (xr.Dataset): SPICAV SO2 dataset containing a so2_ppbv variable.
+
+    Returns:
+        dict with keys:
+            'so2_ppbv'  (float): Peak SO2 value in ppbv.
+            'orbit'     (int):   VEX orbit number.
+            'date':              Observation date (numpy datetime64).
+            'latitude'  (float): Latitude in degrees.
+            'longitude' (float) or 'local_solar_time' (float):
+                                 Spatial coordinate in degrees or hours.
+    """
+    df = ds['so2_ppbv'].to_dataframe().dropna().reset_index()
+
+    if df.empty:
+        raise ValueError("Dataset contains no valid SO2 observations.")
+
+    row = df.loc[df['so2_ppbv'].idxmax()]
+
+    orb_num = int(ds.sel(start_date=row['start_date']).vex_orbit.values)
+
+    result = {
+        'so2_ppbv': float(row['so2_ppbv']),
+        'orbit':    orb_num,
+        'date':     row['start_date'],
+        'latitude': float(row['latitude']),
+    }
+
+    if 'longitude' in df.columns:
+        result['longitude'] = float(row['longitude'])
+    elif 'local_solar_time' in df.columns:
+        result['local_solar_time'] = float(row['local_solar_time'])
+
+    return result
+
 # %%
