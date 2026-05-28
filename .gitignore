@@ -4,3 +4,6 @@ data/*
 # Files
 *.txt
 *.pdf
+*.F90
+*.F
+*.f
