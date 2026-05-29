@@ -54,7 +54,9 @@ heights78 = [9.45306290e-03, 4.83510271e-02, 1.53046221e-01, 3.73352647e-01,
 plume_dict_master = {
               'plume_1': {'name': 'so2_lev35_eqday', 'lev': 35, 'lat_idx': 49, 'lon_idx': 92, 'start_time': 4, 'end_time': 127},
               'plume_2': {'name': 'so2_lev35_eqnight', 'lev': 35, 'lat_idx': 49, 'lon_idx': 47, 'start_time': 4, 'end_time': 127},
-              'hotspot': {'name': 'hotspot', 'lev': 22, 'lat_idx': 49, 'lon_idx': 47, 'start_time': 4, 'end_time': 127},
+              'hotspot1': {'name': 'hotspot1', 'lev': 22, 'lat_idx': 49, 'lon_idx': 47, 'start_time': 4, 'end_time': 127},
+              'hotspot2': {'name': 'hotspot2', 'lev': 22, 'lat_idx': 49, 'lon_idx': 47, 'start_time': 128, 'end_time': 254},
+              'pillar': {'name': 'pillar', 'lev': 22, 'lat_idx': 49, 'lon_idx': 47, 'start_time': 128, 'end_time': 254},
               'h2o': {'name': 'h2o', 'lev': 22, 'lat_idx': 49, 'lon_idx': 47, 'start_time': 4, 'end_time': 127},
               'so2' : {'name': 'so2', 'lev': 35, 'lat_idx': 49, 'lon_idx': 92, 'start_time': 128, 'end_time': 254}
             }

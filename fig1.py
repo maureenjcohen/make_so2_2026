@@ -200,7 +200,7 @@ def figure1(sim, ds, snap_times=[8, 158, 208, 278],
         ax.set_title(f'{labels[i]}) {hrs:+.0f} h', loc='left', pad=5)
 
     # Shared colorbar for all globe panels
-    cb = fig.colorbar(cf, cax=ax_cbar, orientation='horizontal')
+    cb = fig.colorbar(cf, cax=ax_cbar, orientation='horizontal', extend='max')
     cb.set_label(f'SO$_2$ at {height_km} km (ppbv)')
     cb.locator = mticker.FixedLocator([1, 10, 100,1000])
     cb.update_ticks()
