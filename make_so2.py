@@ -28,7 +28,7 @@ from fig1 import figure1, STYLE
 from fig2 import figure2 
 from fig3 import figure3 
 from fig0 import figure0
-from tools import venusdict, plume_dict_master, calculate_so2_mass, name_dict
+from tools import venusdict, plume_dict_master, calculate_so2_mass, name_dict, source_dispersal_time, mass_flux
 from supp_figs import fig_so2_prof, fig_temp_profile, fig_logistic, fig_orbit_summary, fig_orbit_path
 from animations import anim1, anim2, anim3
 

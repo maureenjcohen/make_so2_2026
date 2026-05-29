@@ -148,6 +148,94 @@ def calculate_so2_mass(sim_object, vmr_ppm=0.195):
     return mass_kg
 
 # %%
+def source_dispersal_time(plobject, key='so2', threshold=1.05):
+    """
+    Time in seconds for the source gridbox tracer to return to background
+    after the eruption ends.
+
+    The background level is the pre-eruption value at start_time - 1,
+    multiplied by threshold. Counting stops at the first timestep after
+    end_time where the value falls at or below that level.
+
+    Args:
+        plobject (PlumeSim): Simulation object.
+        key (str): Tracer variable key. Defaults to 'so2'.
+        threshold (float): Multiplier on the pre-eruption value that defines
+            "returned to background". 1.05 means within 5% of baseline.
+
+    Returns:
+        float: Dispersal time in seconds.
+    """
+    lev        = plobject.plumes['lev']
+    lat_idx    = plobject.plumes['lat_idx']
+    lon_idx    = plobject.plumes['lon_idx']
+    start_time = plobject.plumes['start_time']
+    end_time   = plobject.plumes['end_time']
+
+    series   = plobject.data[key][:, lev, lat_idx, lon_idx]
+    interval = float(np.diff(plobject.data.time_counter.values)[0])
+    background = float(series[start_time - 1].values) * threshold
+
+    counter = 0
+    for t in range(end_time, series.shape[0]):
+        if float(series[t].values) > background:
+            counter += 1
+        else:
+            break
+
+    return counter * interval
+
+
+# %%
+def mass_flux(plobject, vmr_ppm=0.195, key='so2', threshold=1.05):
+    """
+    Mass flux required to maintain the enhanced SO2 concentration in the
+    source gridbox, and total SO2 mass injected during the active eruption.
+
+    The outflow rate is the SO2 mass in the source gridbox divided by the
+    dispersal time (the time for the source gridbox value to return to
+    background once forcing stops). Total injected mass is that rate
+    integrated over the active eruption period (start_time to end_time).
+
+    Args:
+        plobject (PlumeSim): Simulation object.
+        vmr_ppm (float): SO2 vmr in ppm used for the mass calculation.
+            Defaults to 0.195.
+        key (str): Tracer variable key. Defaults to 'so2'.
+        threshold (float): Threshold multiplier for background definition
+            passed to source_dispersal_time. Defaults to 1.05.
+
+    Returns:
+        dict with keys:
+            'mass_in_box_kg'    (float): SO2 mass in source gridbox (kg).
+            'dispersal_time_s'  (float): Time to return to background (s).
+            'mass_outflow_kgs'  (float): Required outflow rate to maintain
+                                         enhanced concentration (kg/s).
+            'duration_s'        (float): Active eruption duration (s).
+            'total_injected_kg' (float): Total SO2 injected over eruption
+                                         period (kg).
+    """
+    mass_kg = calculate_so2_mass(plobject, vmr_ppm=vmr_ppm)
+    tau_s   = source_dispersal_time(plobject, key=key, threshold=threshold)
+
+    interval   = float(np.diff(plobject.data.time_counter.values)[0])
+    start_time = plobject.plumes['start_time']
+    end_time   = plobject.plumes['end_time']
+    duration_s = (end_time - start_time) * interval
+
+    mass_outflow_kgs  = mass_kg / tau_s
+    total_injected_kg = mass_outflow_kgs * duration_s
+
+    return {
+        'mass_in_box_kg':    mass_kg,
+        'dispersal_time_s':  tau_s,
+        'mass_outflow_kgs':  mass_outflow_kgs,
+        'duration_s':        duration_s,
+        'total_injected_kg': total_injected_kg,
+    }
+
+
+# %%
 def max_dispersal(plobject, lev, lat, threshold=1.05):
 
     cube = plobject.data['h2o'][:,lev,:,:]
