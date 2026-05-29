@@ -36,6 +36,9 @@ def anim1(sim, t_start, t_end, lev=35, central_lon=130,
         savename (str): Output filename (.mp4).
     """
     plt.rcParams.update(STYLE)
+    plt.rcParams.update({'font.size': 11, 'axes.labelsize': 11,
+                         'axes.titlesize': 12, 'xtick.labelsize': 10,
+                         'ytick.labelsize': 10})
 
     plate = ccrs.PlateCarree()
     proj  = ccrs.Orthographic(central_longitude=central_lon, central_latitude=0)
@@ -59,6 +62,8 @@ def anim1(sim, t_start, t_end, lev=35, central_lon=130,
                   -u_0[::n_quiver, ::n_quiver], v_0[::n_quiver, ::n_quiver],
                   transform=plate, color='black', alpha=0.75,
                   width=0.005, headwidth=4, scale=qscale)
+    qk = ax.quiverkey(q, X=0.88, Y=1.06, U=100, label='100 m s$^{-1}$',
+                      labelpos='E', coordinates='axes')
 
     ax.set_global()
     gl = ax.gridlines(crs=plate, linewidth=0.3, color='grey', alpha=0.5, linestyle='--')
@@ -73,7 +78,7 @@ def anim1(sim, t_start, t_end, lev=35, central_lon=130,
     ax.set_title(f'{hrs_0:+.0f} h', loc='left', pad=3)
 
     def update(frame):
-        nonlocal mesh, q
+        nonlocal mesh, q, qk
         t = t_start + frame
 
         so2 = sim.data['so2'][t, lev, :, :].values * 1e9
@@ -82,6 +87,7 @@ def anim1(sim, t_start, t_end, lev=35, central_lon=130,
 
         mesh.remove()
         q.remove()
+        qk.remove()
 
         mesh = ax.pcolormesh(sim.lons, sim.lats, so2, norm=norm,
                              cmap='YlOrBr_r', transform=plate)
@@ -89,6 +95,8 @@ def anim1(sim, t_start, t_end, lev=35, central_lon=130,
                       -u[::n_quiver, ::n_quiver], v[::n_quiver, ::n_quiver],
                       transform=plate, color='black', alpha=0.75,
                       width=0.005, headwidth=4, scale=qscale)
+        qk = ax.quiverkey(q, X=0.88, Y=1.06, U=100, label='100 m s$^{-1}$',
+                          labelpos='E', coordinates='axes')
 
         hrs = (sim_times[t] - plume_inject_time) / 3600.0
         ax.set_title(f'{hrs:+.0f} h', loc='left', pad=3)
@@ -126,6 +134,9 @@ def anim2(sim, t_start, t_end, lev=35, central_lon=130,
         savename (str): Output filename (.mp4).
     """
     plt.rcParams.update(STYLE)
+    plt.rcParams.update({'font.size': 11, 'axes.labelsize': 11,
+                         'axes.titlesize': 12, 'xtick.labelsize': 10,
+                         'ytick.labelsize': 10})
 
     plate = ccrs.PlateCarree()
     proj  = ccrs.Orthographic(central_longitude=central_lon, central_latitude=0)
@@ -156,6 +167,8 @@ def anim2(sim, t_start, t_end, lev=35, central_lon=130,
                   -u_0[::n_quiver, ::n_quiver], v_0[::n_quiver, ::n_quiver],
                   transform=plate, color='black', alpha=0.75,
                   width=0.005, headwidth=4, scale=qscale)
+    qk = ax.quiverkey(q, X=0.88, Y=1.06, U=100, label='100 m s$^{-1}$',
+                      labelpos='E', coordinates='axes')
 
     ax.set_global()
     gl = ax.gridlines(crs=plate, linewidth=0.3, color='grey', alpha=0.5, linestyle='--')
@@ -170,7 +183,7 @@ def anim2(sim, t_start, t_end, lev=35, central_lon=130,
     ax.set_title(f'{hrs_0:+.0f} h', loc='left', pad=3)
 
     def update(frame):
-        nonlocal mesh, q
+        nonlocal mesh, q, qk
         t = t_start + frame
 
         w = sim.data['vitwz'][t, lev, :, :].values
@@ -179,6 +192,7 @@ def anim2(sim, t_start, t_end, lev=35, central_lon=130,
 
         mesh.remove()
         q.remove()
+        qk.remove()
 
         mesh = ax.pcolormesh(sim.lons, sim.lats, w, norm=norm,
                              cmap='seismic', transform=plate)
@@ -186,6 +200,8 @@ def anim2(sim, t_start, t_end, lev=35, central_lon=130,
                       -u[::n_quiver, ::n_quiver], v[::n_quiver, ::n_quiver],
                       transform=plate, color='black', alpha=0.75,
                       width=0.005, headwidth=4, scale=qscale)
+        qk = ax.quiverkey(q, X=0.88, Y=1.06, U=100, label='100 m s$^{-1}$',
+                          labelpos='E', coordinates='axes')
 
         hrs = (sim_times[t] - plume_inject_time) / 3600.0
         ax.set_title(f'{hrs:+.0f} h', loc='left', pad=3)
@@ -223,6 +239,9 @@ def anim3(sim, t_start, t_end, lev=22, central_lon=320,
         savename (str): Output filename (.mp4).
     """
     plt.rcParams.update(STYLE)
+    plt.rcParams.update({'font.size': 11, 'axes.labelsize': 11,
+                         'axes.titlesize': 12, 'xtick.labelsize': 10,
+                         'ytick.labelsize': 10})
 
     plate = ccrs.PlateCarree()
     proj  = ccrs.Orthographic(central_longitude=central_lon, central_latitude=0)
@@ -252,6 +271,8 @@ def anim3(sim, t_start, t_end, lev=22, central_lon=320,
                   -u_0[::n_quiver, ::n_quiver], v_0[::n_quiver, ::n_quiver],
                   transform=plate, color='black', alpha=0.75,
                   width=0.005, headwidth=4, scale=qscale)
+    qk = ax.quiverkey(q, X=0.65, Y=1.06, U=40, label='40 m s$^{-1}$',
+                      labelpos='E', coordinates='axes')
 
     ax.set_global()
     gl = ax.gridlines(crs=plate, linewidth=0.3, color='grey', alpha=0.5, linestyle='--')
@@ -266,7 +287,7 @@ def anim3(sim, t_start, t_end, lev=22, central_lon=320,
     ax.set_title(f'{hrs_0:+.0f} h', loc='left', pad=3)
 
     def update(frame):
-        nonlocal mesh, q
+        nonlocal mesh, q, qk
         t = t_start + frame
 
         h2o = sim.data['h2o'][t, lev, :, :].values * 1e6
@@ -275,6 +296,7 @@ def anim3(sim, t_start, t_end, lev=22, central_lon=320,
 
         mesh.remove()
         q.remove()
+        qk.remove()
 
         mesh = ax.pcolormesh(sim.lons, sim.lats, h2o, norm=norm,
                              cmap='Blues', transform=plate)
@@ -282,6 +304,8 @@ def anim3(sim, t_start, t_end, lev=22, central_lon=320,
                       -u[::n_quiver, ::n_quiver], v[::n_quiver, ::n_quiver],
                       transform=plate, color='black', alpha=0.75,
                       width=0.005, headwidth=4, scale=qscale)
+        qk = ax.quiverkey(q, X=0.65, Y=1.06, U=40, label='40 m s$^{-1}$',
+                          labelpos='E', coordinates='axes')
 
         hrs = (sim_times[t] - plume_inject_time) / 3600.0
         ax.set_title(f'{hrs:+.0f} h', loc='left', pad=3)
