@@ -130,7 +130,7 @@ if __name__ == "__main__":
     fig_logistic(hotspot, save=True, savepath=savedir, savename='figS_logistic.pdf')
 
     # %%
-    fig_orbit_summary(ds_retrievals, orbit_idx=0,
+    fig_orbit_summary(ds_retrievals, orbit_idx=(41, 50, 60),
                       save=True, savepath=savedir, savename='figS_orbit_summary.pdf')
 
     # %%

@@ -189,28 +189,25 @@ def fig_logistic(sim, L=115, K=760, x0=20, k=0.2,
     plt.show()
 
 # %%
-def fig_orbit_summary(ds, orbit_idx,
+def fig_orbit_summary(ds, orbit_idx=(41, 50, 60),
                       save=False, savepath=None, savename='fig_orbit_summary.pdf'):
     """
-    Supplementary figure: SPICAV SO2 profile for a single orbit.
+    Supplementary figure: SPICAV SO2 profiles for three orbits.
 
-    Plots SO2 abundance vs latitude for a specific orbit, with points coloured
-    by the secondary spatial coordinate (longitude or local solar time).
+    Plots SO2 abundance vs latitude for each orbit in a row of three subplots,
+    with points coloured by the secondary spatial coordinate (longitude or
+    local solar time). A shared colorbar is drawn to the right.
 
     Args:
         ds (xr.Dataset): SPICAV SO2 dataset with start_date, latitude, and
             either longitude or local_solar_time as dimensions.
-        orbit_idx (int): Positional index into the start_date dimension.
+        orbit_idx (tuple of int): Three positional indices into the start_date
+            dimension. Defaults to (41, 50, 60).
         save (bool): Save the figure if True.
         savepath (str): Directory to save.
         savename (str): Filename for saved figure.
     """
     plt.rcParams.update(STYLE)
-
-    # --- Select orbit and extract metadata ---
-    orbit_ds = ds.isel(start_date=orbit_idx)
-    orb_num  = int(orbit_ds.vex_orbit.values)
-    day      = pd.to_datetime(orbit_ds.start_date.values).strftime('%Y-%m-%d')
 
     # --- Determine secondary coordinate (longitude or LST) ---
     if 'longitude' in ds.dims:
@@ -222,25 +219,35 @@ def fig_orbit_summary(ds, orbit_idx,
     else:
         raise KeyError("Dataset must contain 'longitude' or 'local_solar_time' as a dimension.")
 
-    # --- Build clean dataframe for this orbit ---
-    df_plot = orbit_ds.to_dataframe().dropna(subset=['so2_ppbv']).reset_index()
+    fig, axes = plt.subplots(1, 3, figsize=(TWO_COL, 3.5), sharey=True)
+    letters = ('a', 'b', 'c')
 
-    if df_plot.empty:
-        print(f"Orbit {orb_num} (index {orbit_idx}) contains no valid data.")
-        return
+    sc_last = None
+    for ax, idx, letter in zip(axes, orbit_idx, letters):
+        orbit_ds = ds.isel(start_date=idx)
+        orb_num  = int(orbit_ds.vex_orbit.values)
+        day      = pd.to_datetime(orbit_ds.start_date.values).strftime('%Y-%m-%d')
 
-    fig, ax = plt.subplots(figsize=(ONE_COL, 4.0))
+        df_plot = orbit_ds.to_dataframe().dropna(subset=['so2_ppbv']).reset_index()
 
-    sc = ax.scatter(df_plot['so2_ppbv'], df_plot['latitude'],
-                    c=df_plot[x_coord], cmap='plasma',
-                    edgecolor='k', linewidths=0.3, alpha=0.8, s=20)
-    fig.colorbar(sc, ax=ax, label=x_label)
+        if df_plot.empty:
+            ax.set_visible(False)
+            print(f"Orbit {orb_num} (index {idx}) contains no valid data.")
+            continue
 
-    ax.set_xlabel('SO$_2$ (ppbv)')
-    ax.set_ylabel('Latitude (°)')
-    ax.set_title(f'SPICAV orbit {orb_num}: SO$_2$ profile ({day})',
-                 loc='left', pad=2)
-    ax.grid(True, linestyle=':', alpha=0.5)
+        sc = ax.scatter(df_plot['so2_ppbv'], df_plot['latitude'],
+                        c=df_plot[x_coord], cmap='plasma',
+                        edgecolor='k', linewidths=0.3, alpha=0.8, s=20)
+        sc_last = sc
+
+        ax.set_xlabel('SO$_2$ (ppbv)')
+        ax.set_title(f'{letter}) Orbit {orb_num} ({day})', loc='left', pad=2)
+        ax.grid(True, linestyle=':', alpha=0.5)
+
+    axes[0].set_ylabel('Latitude (°)')
+
+    if sc_last is not None:
+        fig.colorbar(sc_last, ax=axes, label=x_label, shrink=0.8)
 
     if save:
         fig.savefig(savepath + savename)
