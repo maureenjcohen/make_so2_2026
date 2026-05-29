@@ -179,6 +179,13 @@ def fig_logistic(sim, levs=22, L=115, K=760, x0=20, k=0.2,
     ax.set_title('Temperature profile', loc='left', pad=2)
     ax.legend(loc='upper right', fontsize=7)
 
+    ax2 = ax.twinx()
+    ax2.set_ylim(ax.get_ylim())
+    tick_levs = [t for t in ax.get_yticks() if 0 <= t < levs]
+    ax2.set_yticks(tick_levs)
+    ax2.set_yticklabels([f'{hlevs[int(t)]:.0f}' for t in tick_levs])
+    ax2.set_ylabel('Altitude (km)')
+
     if save:
         fig.savefig(savepath + savename)
 
