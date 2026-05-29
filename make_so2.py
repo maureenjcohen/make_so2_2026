@@ -107,7 +107,7 @@ if __name__ == "__main__":
     figure2(hotspot2, snap_times=[130, 196, 230, 256, 300, 368], 
             ts_levs=[22, 28, 34, 40], ts_start=100, ts_end=700, 
             zu_start=0, zu_end=1000, zu_anomaly=True,
-            lev=22, central_lon=0, lat_idx=49, lon_idx=47, 
+            lev=35, central_lon=0, lat_idx=49, lon_idx=47, 
             vmin=-1.2, vmax=3.0, save=True, savepath=savedir, 
             savename='fig2_hotspot2.' + filetype)
     
@@ -133,7 +133,7 @@ if __name__ == "__main__":
     figure2(pillar, snap_times=[130, 196, 230, 256, 300, 368], 
             ts_levs=[22, 28, 34, 40], ts_start=100, ts_end=700, 
             zu_start=0, zu_end=1000, zu_anomaly=True,
-            lev=22, central_lon=0, lat_idx=49, lon_idx=47, 
+            lev=35, central_lon=0, lat_idx=49, lon_idx=47, 
             vmin=-1.2, vmax=3.0, save=True, savepath=savedir, 
             savename='fig2_pillar.' + filetype)
 
@@ -143,17 +143,30 @@ if __name__ == "__main__":
     chem.set_resolution()
 
     # %%
-    figure3(chem, snap_times=[10, 140, 304, 364], ts_levs=[21, 22, 23], ts_start=0, ts_end=2000, central_lon=320)
-    # %%
+    figure3(chem, snap_times=[10, 140, 304, 364], ts_levs=[21, 22, 23], 
+            ts_start=0, ts_end=2000, central_lon=320,
+            save=True, savepath=savedir, savename='fig3_h2o.' + filetype)
 
     # %%
-    fig_so2_prof(so2, save=True, savepath=savedir, savename='figS_so2_prof.pdf')
+    fig_so2_prof(so2, times=[0, 1000, 2000, 3000, 4000, 5000],
+                 save=True, savepath=savedir, savename='figS_so2_prof.' + filetype)
 
     # %%
-    fig_temp_profile(hotspot, save=True, savepath=savedir, savename='figS_temp_profile.pdf')
+    fig_temp_profile(hotspot2, ylim_bottom=20, ylim_top=35,
+                     t=hotspot2.plumes['start_time']+6, save=True, savepath=savedir, 
+                     savename='figS_temp_profile_hotspot2.' + filetype)
+    
+    # %%
+    fig_temp_profile(hotspot1, ylim_bottom=20, ylim_top=35,
+                    t=hotspot1.plumes['start_time']+6, save=True, savepath=savedir, 
+                    savename='figS_temp_profile_hotspot1.' + filetype)
+    # %%
+    fig_temp_profile(pillar, ylim_bottom=20, ylim_top=35,
+                    t=pillar.plumes['start_time']+6, save=True, savepath=savedir, 
+                    savename='figS_temp_profile_pillar.' + filetype)
 
     # %%
-    fig_logistic(hotspot, save=True, savepath=savedir, savename='figS_logistic.pdf')
+    fig_logistic(pillar, save=True, savepath=savedir, savename='figS_logistic.' + filetype)
 
     # %%
     anim1(so2, t_start=plume_dict_master['so2']['start_time'],
@@ -162,7 +175,7 @@ if __name__ == "__main__":
           save=True, savepath=savedir, savename='anim1_so2.mp4')
 
     # %%
-    anim2(hotspot, t_start=plume_dict_master['hotspot']['start_time'],
+    anim2(hotspot2, t_start=plume_dict_master['hotspot']['start_time'],
           t_end=plume_dict_master['hotspot']['end_time'],
           lev=22, central_lon=0,
           save=True, savepath=savedir, savename='anim2_vwind.mp4')
@@ -177,8 +190,10 @@ if __name__ == "__main__":
     so2.close()
     del so2
 
-    hotspot.close()
-    del hotspot
+    hotspot2.close()
+    hotspot1.close()
+    pillar.close()
+    del hotspot2, hotspot1, pillar
 
     chem.close()
     del chem

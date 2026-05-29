@@ -111,12 +111,12 @@ def fig_temp_profile(sim, t=0,
     lon_idx = sim.plumes['lon_idx']
     lon_val = sim.lons[lon_idx]
 
-    temp = sim.data['temp'][t, :, :, lon_idx].values  # (lev, lat)
+    temp = sim.data['temp'][t, ylim_bottom:ylim_top, :, lon_idx].values  # (lev, lat)
 
     fig, ax = plt.subplots(figsize=(ONE_HALF_COL, 4.0))
 
-    cf = ax.contourf(sim.lats, sim.heights, temp,
-                     levels=20, cmap='inferno')
+    cf = ax.contourf(sim.lats, sim.heights[ylim_bottom:ylim_top], temp,
+                     cmap='inferno', levels=np.arange(190,421,10))
 
     cb = fig.colorbar(cf, ax=ax, orientation='vertical', pad=0.03)
     cb.set_label('Temperature (K)')
@@ -130,16 +130,13 @@ def fig_temp_profile(sim, t=0,
     ax.xaxis.set_major_locator(mticker.MultipleLocator(30))
     ax.xaxis.set_minor_locator(mticker.MultipleLocator(10))
 
-    if ylim_bottom is not None or ylim_top is not None:
-        ax.set_ylim(bottom=ylim_bottom, top=ylim_top)
-
     if save:
         fig.savefig(savepath + savename)
 
     plt.show()
 
 # %%
-def fig_logistic(sim, L=115, K=760, x0=20, k=0.2,
+def fig_logistic(sim, levs=22, L=115, K=760, x0=20, k=0.2,
                  save=False, savepath=None, savename='fig_logistic.pdf'):
     """
     Supplementary figure: logistic decay curve vs. simulated temperature profile.
@@ -160,8 +157,7 @@ def fig_logistic(sim, L=115, K=760, x0=20, k=0.2,
     """
     plt.rcParams.update(STYLE)
 
-    levs   = len(sim.heights)
-    levels = np.arange(levs)
+    hlevs = sim.heights[:levs]
 
     # --- Global area-weighted long-term mean temperature ---
     aire     = sim.data['aire'].values  # (lat, lon)
@@ -174,8 +170,8 @@ def fig_logistic(sim, L=115, K=760, x0=20, k=0.2,
 
     fig, ax = plt.subplots(figsize=(ONE_COL, 4.0))
 
-    ax.plot(temp_mean,     levels, color='steelblue',  linewidth=1.0, label='Simulated mean')
-    ax.plot(temp_logistic, levels, color='firebrick',  linewidth=1.0,
+    ax.plot(temp_mean[:levs], np.arange(0,levs), color='steelblue',  linewidth=1.0, label='Simulated mean')
+    ax.plot(temp_logistic, np.arange(0,levs), color='firebrick',  linewidth=1.0,
             linestyle='--', label='Logistic decay')
 
     ax.set_xlabel('Temperature (K)')

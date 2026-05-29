@@ -43,7 +43,7 @@ def figure3(sim, snap_times, ts_levs, ts_start, ts_end,
 
     height_km = np.round(sim.heights[lev], 1)
     sim_times = sim.data.time_counter.values
-    plume_inject_time = sim_times[plume_dict['hotspot']['start_time']]
+    plume_inject_time = sim_times[sim.plumes['start_time']]
 
     # Colormap limits: auto-scale from all four snapshots if not specified
     if vmin is None or vmax is None:
@@ -108,11 +108,11 @@ def figure3(sim, snap_times, ts_levs, ts_start, ts_end,
         alt_label = f'{sim.heights[ts_lev]:.0f} km'
         ax_ts.plot(ts_hours, h2o_max, color=c, linewidth=1.0, label=alt_label)
 
-        background = sim.data['h2o'][plume_dict['hotspot']['start_time'] - 1,
+        background = sim.data['h2o'][sim.plumes['start_time'] - 1,
                                      ts_lev, :, :].values.mean() * 1e6
         ax_ts.axhline(background, color=c, linewidth=0.8, linestyle='--')
 
-    x_inj_end = ts_hours[plume_dict['hotspot']['end_time'] - ts_start]
+    x_inj_end = ts_hours[sim.plumes['end_time'] - ts_start]
     ax_ts.axvline(x_inj_end, color='darkgrey', linestyle='--')
     ax_ts.text(x_inj_end + 2.0, 0.40, 'Injection stops',
                transform=ax_ts.get_xaxis_transform(),
