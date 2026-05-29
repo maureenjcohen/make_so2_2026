@@ -149,7 +149,9 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
     for ts_lev, c in zip(ts_levs, line_colors):
         vitu_ts   = sim.data['vitu'][zu_start:zu_end, ts_lev, lat_idx, lon_idx].values
         if zu_anomaly:
-            vitu_ts = vitu_ts - vitu_ts.mean()
+            pre_eruption_mean = sim.data['vitu'][zu_start:sim.plumes['start_time'],
+                                                 ts_lev, lat_idx, lon_idx].values.mean()
+            vitu_ts = vitu_ts - pre_eruption_mean
         alt_label = f'{sim.heights[ts_lev]:.0f} km'
         ax_zu.plot(zu_hours, vitu_ts, color=c, linewidth=1.0, label=alt_label)
 
