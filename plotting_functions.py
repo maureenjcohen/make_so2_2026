@@ -184,110 +184,79 @@ def data_compare(ds, start, end, sim, plume_dict, log=True, weighted=False,
 
 
 # %%
-def dispersal_time(plobject, lev, keys, lats, lons, name_dict, threshold,
+def dispersal_time(plobject, lev, key='so2', threshold=1.05,
                    axis_len=500, save=False, plot=True,
                    savename='plume_dispersal.png',
-                   savepath=None,
-                   sformat='png'):
+                   savepath=None, sformat='png'):
     """
-    Find the time for the tracer value in the gridbox to return to the background value.
+    Find the dispersal time for the SO2 source gridbox and optionally plot
+    the post-eruption decay on a log scale.
+
+    The background level is the pre-eruption value at start_time - 1 multiplied
+    by threshold. The dispersal time is the number of timesteps after end_time
+    until the concentration falls to that level, converted to hours.
+
+    The plot shows the full time series from two timesteps before the eruption
+    starts, with a vertical dashed line at the end of forcing and a horizontal
+    dashed line at the background threshold. The log y-axis makes exponential
+    decay visible as a straight line.
 
     Args:
         plobject (PlumeSim): PlumeSim object containing the data.
-        key (str): Dictionary key of the data variable.
         lev (int): Vertical level index.
-        threshold (float or None): Threshold value for defining the plume.
-        save (bool): Whether to save the plot. Defaults to False.
-        savename (str): Filename for the saved plot. Defaults to 'plume_dispersal.png'.
-        savepath (str): Directory path to save the plot. Defaults to None.
-        sformat (str): Format to save the plot. Defaults to 'png'.
+        key (str): Tracer variable key. Defaults to 'so2'.
+        threshold (float): Multiplier on pre-eruption value defining background.
+            Defaults to 1.05.
+        axis_len (int): Upper time index for the plot x-axis. Defaults to 500.
+        save (bool): Save the figure. Defaults to False.
+        plot (bool): Show the figure. Defaults to True.
+        savename (str): Filename for saved figure.
+        savepath (str): Directory for saved figure.
+        sformat (str): File format. Defaults to 'png'.
+
+    Returns:
+        float: Dispersal time in hours.
     """
-    # Extract data at desired model level
-    if isinstance(keys, str):
-        keys = [keys]
-    num_subplots = len(keys)
-    if num_subplots == 1:
-        num_cols, num_rows = 1, 1
-    elif num_subplots == 2:
-        num_cols, num_rows = 2, 1
-    elif num_subplots == 4:
-        num_cols, num_rows = 2, 2
+    lat_idx    = plobject.plumes['lat_idx']
+    lon_idx    = plobject.plumes['lon_idx']
+    start_time = plobject.plumes['start_time']
+    end_time   = plobject.plumes['end_time']
 
-    position = range(1, num_subplots+1)
+    series   = plobject.data[key][:, lev, lat_idx, lon_idx]
     interval = np.diff(plobject.data.time_counter.values)[0]
-    time_axis = np.arange(plobject.plumes['plume_1']['start_time']-2, axis_len)*interval/(60*60)
+    background = float(series[start_time - 1].values) * threshold
 
-    if plot==True:
-        fig = plt.figure(figsize=(num_cols*4, num_rows*4), tight_layout=True)
+    counter = 0
+    for t in range(end_time, series.shape[0]):
+        if float(series[t].values) > background:
+            counter += 1
+        else:
+            break
 
-    disp_times = []
-    for i, key in enumerate(keys):
-        series1 = plobject.data[key][:,lev,lats[0],lons[0]]
-        series2 = plobject.data[key][:,lev,lats[1],lons[1]]
-        # Get background value of tracer before plume starts
-        background_val1 = series1[plobject.plumes['plume_1']['start_time']-1].values*threshold
-        background_val2 = series2[plobject.plumes['plume_2']['start_time']-1].values*threshold
-    
-        counter1 = 0
-        for t in range(plobject.plumes['plume_1']['end_time'], series1.shape[0]):
-            if series1[t].values > background_val1:
-                # Count how many time steps tracer value remains above background
-                counter1 = counter1 + 1
-            else:
-                # Stop loop when tracer returns to background
-                break
+    disp_hours = counter * interval / (60 * 60)
 
-        counter2 = 0
-        for t in range(plobject.plumes['plume_1']['end_time'], series2.shape[0]):
-            if series2[t].values > background_val2:
-                # Count how many time steps tracer value remains above background
-                counter2 = counter2 + 1
-            else:
-                # Stop loop when tracer returns to background
-                break
-        
-        # Total time in seconds until tracer valuer returns to background
-        disp_time1 = counter1 * interval
-        disp_time2 = counter2 * interval
-        
-        # Convert to hours for convenience
-        disp_hours1 = disp_time1 / (60*60)
-        disp_hours2 = disp_time2 / (60*60)
-        disp_dict = {'species': key, 'disp_time_eq_hrs': disp_hours1, 'disp_time_hl_hrs': disp_hours2}
-        disp_times.append(disp_dict)
+    if plot:
+        time_axis = (np.arange(start_time - 2, axis_len) - start_time) * interval / (60 * 60)
+        data = series[start_time - 2:axis_len].values * 1e6
 
-        # Get data, including 5 time steps before and after plume
-        data1 = series1[plobject.plumes['plume_1']['start_time']-2:axis_len]*1e6
-        data2 = series2[plobject.plumes['plume_1']['start_time']-2:axis_len]*1e6
-    
-        if plot==True:
-            ax = fig.add_subplot(num_rows, num_cols, position[i])
-            ax.plot(time_axis, data1, color='red', label=rf'{np.round(plobject.lats[lats[0]],2)}°N: $\tau_d$={np.round(disp_hours1,2)} h')
-            ax.plot(time_axis, data2, color='blue', label=rf'{np.round(plobject.lats[lats[1]],2)}°N: $\tau_d$={np.round(disp_hours2,2)} h')
-            ax.plot(time_axis, np.ones_like(data1)*background_val1*1e6, color='red',
-                    linestyle='dashed')
-            ax.plot(time_axis, np.ones_like(data1)*background_val2*1e6, color='blue',
-                    linestyle='dashed')
-            title = name_dict.get(key, key)
-            if num_subplots > 1:
-                letter = chr(97 + i)
-                title = f'{letter}) {title}'
-            ax.set_title(title, fontsize=16)
-            ax.set_ylabel(f'{name_dict[key]} vmr / ppm', fontsize=16)
-            ax.set_ylim([background_val1*1e6*0.8, data1.max()*1.2])
-            ax.set_xlabel('Time / hours', fontsize=16)
-            plt.legend(loc='upper right')
-    if plot==True:
-        fig.suptitle(f'Plume dispersal times, h = {np.round(plobject.heights[lev], 2)} km', y=0.97, fontsize=18)
-        plt.subplots_adjust(wspace=0.3, hspace=0.3)
+        fig, ax = plt.subplots(figsize=(6, 4), tight_layout=True)
+        ax.plot(time_axis, data, color='steelblue', linewidth=1.0)
+        ax.axhline(background * 1e6, color='k', linestyle='--', linewidth=0.8,
+                   label='Background threshold')
+        ax.axvline((end_time - start_time) * interval / (60 * 60),
+                   color='r', linestyle='--', linewidth=0.8, label='End of forcing')
+        ax.set_yscale('log')
+        ax.set_xlabel('Time since eruption start (hours)')
+        ax.set_ylabel('SO$_2$ vmr (ppm)')
+        ax.set_title(f'SO$_2$ dispersal at {np.round(plobject.heights[lev], 1)} km, '
+                     f'$\\tau_d$ = {disp_hours:.1f} h', loc='left')
+        ax.legend(fontsize=8)
 
-    if save:
-        plt.savefig(savepath + savename, format=sformat, bbox_inches='tight')
-
-    if plot==True:
+        if save:
+            fig.savefig(savepath + savename, format=sformat, bbox_inches='tight')
         plt.show()
 
-    return disp_times
+    return disp_hours
 
 # %%
 def dispersal_map(plobject, lev, keys, name_dict, threshold,
