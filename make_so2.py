@@ -5,9 +5,9 @@ Plotting functions for 'Decadal sulphur dioxide variability on Venus not caused 
 # %% Filepaths
 eqday_plume = '/exomars/data/internal/working/mc5526/VPCM_decadal/Xins_eq_day.nc'
 eqnight_plume = '/exomars/data/internal/working/mc5526/VPCM_decadal/Xins_eq_night.nc'
-so2_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/so2_plume_96x96x78/Xins_so2_big.nc'
+so2_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/so2_plume_96x96x78/Xins_so2.nc'
 chem_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/so2_plume_96x96x78/Xins_chem.nc'
-hotspot_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/hotspot_96x96x50/Xins_hotspot1.nc'
+hotspot_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/hotspot_96x96x50/Xins_hotspot2.nc'
 retrievals = '/exomars/projects/mc5526/VPCM_decadal_so2/netcdfs/SO2_lons.nc'
 savedir = '/exomars/projects/mc5526/VPCM_decadal_so2/scratch_plots/'
 filetype = 'png'
@@ -42,14 +42,18 @@ if __name__ == "__main__":
 
     # %%
     figure0(ds_retrievals, rolling_window=60, 
-            peak_search_before='2008-01-01', trough_threshold=30, 
-            save=True, savepath=savedir, savename='fig0_ref_30.png')
+            peak_search_before='2008-01-01', trough_threshold=20, 
+            save=True, savepath=savedir, savename='fig0_ref_20.png')
 
     # %%
     # Create PlumeSim object and load data for plume run
     eqday = PlumeSim(venusdict, plume_dict_master['plume_1'], 'equatorial dayside plume')
     eqday.load_file(eqday_plume)
     eqday.set_resolution()
+
+    # %%
+    day_mass = calculate_so2_mass(eqday, vmr_ppm=1.0)
+    
 
     # %%
     figure1(eqday, ds_retrievals, snap_times=[8, 158, 208, 278], 

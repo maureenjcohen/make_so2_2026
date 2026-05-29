@@ -10,7 +10,7 @@ from matplotlib import colors
 import cartopy.crs as ccrs
 
 from fig1 import STYLE, TWO_COL
-from tools import plume_dict
+from tools import plume_dict_master
 
 # %%
 def figure3(sim, snap_times, ts_levs, ts_start, ts_end,

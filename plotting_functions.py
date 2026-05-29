@@ -10,7 +10,7 @@ import matplotlib.dates as mdates
 from matplotlib import colors
 import pandas as pd
 
-from tools import plume_dict, max_dispersal
+from tools import plume_dict_master, max_dispersal
 
 # %%
 def marcq_reproduce(ds, save=False, window=240, min_valid_days=60,
