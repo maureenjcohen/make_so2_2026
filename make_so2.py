@@ -43,7 +43,14 @@ if __name__ == "__main__":
     # %%
     figure0(ds_retrievals, rolling_window=60, 
             peak_search_before='2008-01-01', trough_threshold=20, 
-            save=True, savepath=savedir, savename='fig0_ref_20.png')
+            save=True, savepath=savedir, savename='fig0_ref_20.' + filetype)
+    # %%
+    fig_orbit_summary(ds_retrievals, orbit_idx=0,
+                      save=True, savepath=savedir, savename='figS_orbit_summary.' + filetype)
+
+    # %%
+    fig_orbit_path(ds_retrievals, orbit_idx=0,
+                   save=True, savepath=savedir, savename='figS_orbit_path.pdf')
 
     # %%
     # Create PlumeSim object and load data for plume run
@@ -51,20 +58,25 @@ if __name__ == "__main__":
     eqday.load_file(eqday_plume)
     eqday.set_resolution()
 
+    eqnight = PlumeSim(venusdict, plume_dict_master['plume_2'], 'equatorial nightside plume')
+    eqnight.load_file(eqnight_plume)
+    eqnight.set_resolution()
+
     # %%
-    day_mass = calculate_so2_mass(eqday, vmr_ppm=1.0)
-    
+    eqday_mass = mass_flux(eqday, vmr_ppm=1.0, key='so2', threshold=1.05)
+    eqnight_mass = mass_flux(eqnight, vmr_ppm=1.0, key='so2', threshold=1.05)
 
     # %%
     figure1(eqday, ds_retrievals, snap_times=[8, 158, 208, 278], 
             long_start=0, long_end=100, zoom_start=38, zoom_end=72, 
             plume_anchor=39, lev=35, central_lon=130, save=True,
             savepath=savedir, savename='fig1_ref.png')
-    
+
     # %%
     eqday.close()
-    del eqday
-    
+    eqnight.close()
+    del eqday, eqnight
+ 
     # %%
     # Create PlumeSim object and load data for plume run
     so2 = PlumeSim(venusdict, plume_dict_master['so2'], 'equatorial dayside plume')
@@ -128,14 +140,6 @@ if __name__ == "__main__":
 
     # %%
     fig_logistic(hotspot, save=True, savepath=savedir, savename='figS_logistic.pdf')
-
-    # %%
-    fig_orbit_summary(ds_retrievals, orbit_idx=(41, 50, 60),
-                      save=True, savepath=savedir, savename='figS_orbit_summary.pdf')
-
-    # %%
-    fig_orbit_path(ds_retrievals, orbit_idx=0,
-                   save=True, savepath=savedir, savename='figS_orbit_path.pdf')
 
     # %%
     anim1(so2, t_start=plume_dict_master['so2']['start_time'],
