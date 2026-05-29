@@ -170,19 +170,31 @@ if __name__ == "__main__":
 
     # %%
     anim1(so2, t_start=plume_dict_master['so2']['start_time'],
-          t_end=plume_dict_master['so2']['end_time'],
+          t_end=650,
           lev=35, central_lon=-40,
           save=True, savepath=savedir, savename='anim1_so2.mp4')
 
     # %%
-    anim2(hotspot2, t_start=plume_dict_master['hotspot']['start_time'],
-          t_end=plume_dict_master['hotspot']['end_time'],
-          lev=22, central_lon=0,
-          save=True, savepath=savedir, savename='anim2_vwind.mp4')
+    anim2(hotspot2, t_start=plume_dict_master['hotspot2']['start_time'],
+          t_end=700,
+          lev=35, central_lon=0,
+          save=True, savepath=savedir, savename='anim2_vwind_hotspot2.mp4')
+    
+    # %%
+    anim2(hotspot1, t_start=plume_dict_master['hotspot1']['start_time'],
+          t_end=700,
+          lev=35, central_lon=0,
+          save=True, savepath=savedir, savename='anim2_vwind_hotspot1.mp4')
+    
+    # %%
+    anim2(pillar, t_start=plume_dict_master['pillar']['start_time'],
+          t_end=700,
+          lev=35, central_lon=0,
+          save=True, savepath=savedir, savename='anim2_vwind_pillar.mp4')
 
     # %%
     anim3(chem, t_start=plume_dict_master['h2o']['start_time'],
-          t_end=plume_dict_master['h2o']['end_time'],
+          t_end=650,
           lev=22, central_lon=320,
           save=True, savepath=savedir, savename='anim3_h2o.mp4')
 

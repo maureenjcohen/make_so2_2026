@@ -136,7 +136,7 @@ def fig_temp_profile(sim, t=0,
     plt.show()
 
 # %%
-def fig_logistic(sim, levs=22, L=115, K=760, x0=20, k=0.2,
+def fig_logistic(sim, levs=22, L=115, K=760, x0=20, k=0.2, gmean=False,
                  save=False, savepath=None, savename='fig_logistic.pdf'):
     """
     Supplementary figure: logistic decay curve vs. simulated temperature profile.
@@ -158,21 +158,26 @@ def fig_logistic(sim, levs=22, L=115, K=760, x0=20, k=0.2,
     plt.rcParams.update(STYLE)
 
     hlevs = sim.heights[:levs]
-
-    # --- Global area-weighted long-term mean temperature ---
-    aire     = sim.data['aire'].values  # (lat, lon)
     temp_4d  = sim.data['temp'].values  # (time, lev, lat, lon)
-    temp_area = (temp_4d * aire[np.newaxis, np.newaxis, :, :]).sum(axis=(2, 3)) / aire.sum()
-    temp_mean = temp_area.mean(axis=0)  # (lev,)
+
+    if gmean == True:
+    # --- Global area-weighted long-term mean temperature ---
+        aire     = sim.data['aire'].values  # (lat, lon)
+        temp_area = (temp_4d * aire[np.newaxis, np.newaxis, :, :]).sum(axis=(2, 3)) / aire.sum()
+        temp_plot = temp_area.mean(axis=0)  # (lev,)
+        slabel = 'Global mean'
+    else:
+        temp_plot = temp_4d[sim.plumes['start_time']-1, :, sim.plumes['lat_idx'], sim.plumes['lon_idx']]
+        slabel = 'Before plume'
 
     # --- Logistic decay curve ---
     temp_logistic = logistic_decay(levs=levs, L=L, K=K, x0=x0, k=k)
 
     fig, ax = plt.subplots(figsize=(ONE_COL, 4.0))
 
-    ax.plot(temp_mean[:levs], np.arange(0,levs), color='steelblue',  linewidth=1.0, label='Simulated mean')
+    ax.plot(temp_plot[:levs], np.arange(0,levs), color='steelblue',  linewidth=1.0, label=slabel)
     ax.plot(temp_logistic, np.arange(0,levs), color='firebrick',  linewidth=1.0,
-            linestyle='--', label='Logistic decay')
+            linestyle='--', label='Plume profile')
 
     ax.set_xlabel('Temperature (K)')
     ax.set_ylabel('Level index')
@@ -180,6 +185,8 @@ def fig_logistic(sim, levs=22, L=115, K=760, x0=20, k=0.2,
     ax.legend(loc='upper right', fontsize=7)
 
     ax2 = ax.twinx()
+    ax2.spines['right'].set_visible(True)
+    ax2.plot(temp_plot[:levs], hlevs, alpha=0)
     ax2.set_ylim(ax.get_ylim())
     tick_levs = [t for t in ax.get_yticks() if 0 <= t < levs]
     ax2.set_yticks(tick_levs)
