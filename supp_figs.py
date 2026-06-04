@@ -70,8 +70,8 @@ def fig_so2_prof(sim, times=None, t_start=None, t_end=None,
     ax.plot(so2_tmean, heights, color='k', linewidth=1.5, label='Time mean', zorder=5)
 
     # --- Prescribed/free boundary at level 35 ---
-    ax.axhline(heights[35], color='k', linewidth=0.8, linestyle='--', zorder=4)
-    ax.text(0.97, heights[35], 'Prescribed below',
+    ax.axhline(heights[33], color='k', linewidth=0.8, linestyle='--', zorder=4)
+    ax.text(0.97, heights[33], 'Prescribed below',
             transform=ax.get_yaxis_transform(), ha='right', va='bottom', fontsize=6,
             color='k')
 

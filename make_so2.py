@@ -105,10 +105,10 @@ if __name__ == "__main__":
     
     # %% Late start
     figure2(hotspot2, snap_times=[130, 196, 230, 256, 300, 368], 
-            ts_levs=[22, 28, 34, 40], ts_start=100, ts_end=700, 
-            zu_start=0, zu_end=1000, zu_anomaly=True,
+            ts_levs=[21, 28, 35, 40], ts_start=100, ts_end=700, 
+            zu_start=0, zu_end=1500, zu_anomaly=True,
             lev=35, central_lon=0, lat_idx=49, lon_idx=47, 
-            vmin=-1.2, vmax=3.0, save=True, savepath=savedir, 
+            vmin=-1.0, vmax=1.0, save=True, savepath=savedir, 
             savename='fig2_hotspot2.' + filetype)
     
     # %%
@@ -118,10 +118,10 @@ if __name__ == "__main__":
     
     # %% Early start
     figure2(hotspot1, snap_times=[10, 30, 90, 150, 312, 508], 
-            ts_levs=[22, 28, 34, 40], ts_start=0, ts_end=700, 
-            zu_start=0, zu_end=1000, zu_anomaly=True,
+            ts_levs=[21, 28, 35, 40], ts_start=0, ts_end=700, 
+            zu_start=0, zu_end=3000, zu_anomaly=True,
             lev=35, central_lon=0, lat_idx=49, lon_idx=47, 
-            vmin=-2.0, vmax=3.0, save=True, savepath=savedir, 
+            vmin=-3.0, vmax=3.0, save=True, savepath=savedir, 
             savename='fig2_hotspot1.' + filetype)
     
     # %%
@@ -130,11 +130,11 @@ if __name__ == "__main__":
     pillar.set_resolution()
     
     # %% Late start
-    figure2(pillar, snap_times=[130, 196, 230, 256, 300, 368], 
-            ts_levs=[22, 28, 34, 40], ts_start=100, ts_end=700, 
-            zu_start=0, zu_end=1000, zu_anomaly=True,
+    figure2(pillar, snap_times=[130, 196, 256, 300, 512, 1842], 
+            ts_levs=[21, 28, 35, 40], ts_start=100, ts_end=700, 
+            zu_start=0, zu_end=3600, zu_anomaly=True,
             lev=35, central_lon=0, lat_idx=49, lon_idx=47, 
-            vmin=-1.2, vmax=3.0, save=True, savepath=savedir, 
+            vmin=-3.0, vmax=3.0, save=True, savepath=savedir, 
             savename='fig2_pillar.' + filetype)
 
     # %%
@@ -176,19 +176,19 @@ if __name__ == "__main__":
 
     # %%
     anim2(hotspot2, t_start=plume_dict_master['hotspot2']['start_time'],
-          t_end=700,
+          t_end=700, vmin=-1.0, vmax=1.0,
           lev=35, central_lon=0,
           save=True, savepath=savedir, savename='anim2_vwind_hotspot2.mp4')
     
     # %%
     anim2(hotspot1, t_start=plume_dict_master['hotspot1']['start_time'],
-          t_end=700,
+          t_end=700, vmin=-3.0, vmax=3.0,
           lev=35, central_lon=0,
           save=True, savepath=savedir, savename='anim2_vwind_hotspot1.mp4')
     
     # %%
     anim2(pillar, t_start=plume_dict_master['pillar']['start_time'],
-          t_end=700,
+          t_end=700, vmin=-3.0, vmax=3.0,
           lev=35, central_lon=0,
           save=True, savepath=savedir, savename='anim2_vwind_pillar.mp4')
 

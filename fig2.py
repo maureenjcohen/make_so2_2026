@@ -92,7 +92,7 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
         v_snap     = sim.data['vitv'][t, lev, :, :].values
 
         cf = ax.contourf(sim.lons, sim.lats, vitwz_snap,
-                         levels=np.linspace(vmin, vmax, 21), extend='max',
+                         levels=np.linspace(vmin, vmax, 21), extend='both',
                          norm=norm, cmap='seismic', transform=plate)
 
         q = ax.quiver(sim.lons[::n_quiver], sim.lats[::n_quiver],
@@ -117,7 +117,7 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
     sm = plt.cm.ScalarMappable(norm=norm, cmap='seismic')
     sm.set_array([])
     cb = fig.colorbar(sm, ax=globe_axes, orientation='vertical',
-                      fraction=0.025, pad=0.03, shrink=0.85, extend='max')
+                      fraction=0.025, pad=0.03, shrink=0.85, extend='both')
     cb.set_label(f'w at {height_km} km (m s$^{{-1}}$)')
     cb.ax.yaxis.set_minor_locator(mticker.NullLocator())
 
@@ -132,11 +132,11 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
         ax_w.plot(ts_hours, vitwz_ts, color=c, linewidth=1.0, label=alt_label)
     x_inj_end = ts_hours[sim.plumes['end_time'] - ts_start]
     ax_w.axvline(x_inj_end, color='darkgrey', linestyle='--')
-    ax_w.text(x_inj_end + 1.5, 0.97, 'Injection stops',
+    ax_w.text(x_inj_end + 1.5, 0.97, 'Heating stops',
               transform=ax_w.get_xaxis_transform(),
               va='top', ha='left', fontsize=7, color='darkgrey')
     ax_w.axhline(0, color='k', linewidth=0.5, linestyle=':')
-    ax_w.set_xlabel('Time from injection (h)')
+    ax_w.set_xlabel('Time from enhancement (h)')
     ax_w.set_ylabel('Vertical wind (m s$^{-1}$)')
     ax_w.set_title('g)', loc='left', pad=2)
     ax_w.legend(loc='upper right', fontsize=7, title='Altitude', title_fontsize=7,
@@ -157,7 +157,7 @@ def figure2(sim, snap_times, ts_levs, ts_start, ts_end,
 
     ax_zu.axvline(x_inj_end, color='darkgrey', linestyle='--')
     ax_zu.axhline(0, color='k', linewidth=0.5, linestyle=':')
-    ax_zu.set_xlabel('Time from injection (h)')
+    ax_zu.set_xlabel('Time from enhancement (h)')
     ax_zu.set_ylabel('Zonal wind anomaly (m s$^{-1}$)' if zu_anomaly
                      else 'Zonal wind (m s$^{-1}$)')
     ax_zu.set_title('h)', loc='left', pad=2)
