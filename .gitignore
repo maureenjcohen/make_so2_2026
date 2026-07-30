@@ -1,6 +1,6 @@
 examples/*
 data/*
-
+__pycache__/
 # Files
 *.txt
 *.pdf
