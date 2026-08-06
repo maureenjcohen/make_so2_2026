@@ -4,8 +4,9 @@ Utility tools for 'How long could volcanic plumes persist in the Venus atmospher
 """
 # %%
 import numpy as np
+import pandas as pd
 import xarray as xr
-from scipy.optimize import curve_fit
+from scipy.optimize import curve_fit, minimize
 
 # %% Definition of basic Venus model constants
 # radius: km, g: m/s^2, periods: days, psurf: bar
@@ -331,4 +332,119 @@ def spicav_max_so2(ds):
 
     return result
 
+# %%
+
+# %%
+def spicav_campaigns(ds, gap_days=21):
+    """
+    Group the SPICAV observations into observing campaigns.
+
+    Computes the latitude-weighted mean SO2 per observation, then groups
+    consecutive observations separated by less than gap_days into campaigns.
+    Each campaign is summarised by the median of log10(SO2), the 16th-84th
+    percentile spread, and the standard error of the median.
+
+    Args:
+        ds (xr.Dataset): SPICAV observations dataset with dims
+            (start_date, latitude, longitude).
+        gap_days (int): A gap longer than this starts a new campaign.
+
+    Returns:
+        (pd.DataFrame, pd.Timestamp): One row per campaign (date, t in days
+            since first observation, log, lo, hi, sem, n), and the date of
+            the first observation.
+    """
+    dates = pd.to_datetime(ds.start_date.values)
+    w     = np.cos(np.deg2rad(ds.latitude))
+    so2   = ds.so2_ppbv.weighted(w).mean(dim=['latitude', 'longitude']).values
+
+    df = pd.DataFrame({'date': dates, 'so2': so2}).dropna()
+    df = df[df['so2'] > 0].sort_values('date').reset_index(drop=True)
+
+    t0 = df['date'].iloc[0]
+    t  = (df['date'] - t0).dt.days.values.astype(float)
+    y  = np.log10(df['so2'].values)
+
+    label = np.concatenate([[0], np.cumsum(np.diff(t) > gap_days)])
+
+    rows = []
+    for k in range(label.max() + 1):
+        m  = label == k
+        yk = y[m]
+        sig = (np.percentile(yk, 84) - np.percentile(yk, 16)) / 2
+        rows.append({
+            'date': t0 + pd.Timedelta(days=float(t[m].mean())),
+            't':    t[m].mean(),
+            'log':  np.median(yk),
+            'lo':   np.percentile(yk, 16),
+            'hi':   np.percentile(yk, 84),
+            'sem':  max(1.25 * sig / np.sqrt(m.sum()), 0.05),
+            'n':    int(m.sum()),
+        })
+    return pd.DataFrame(rows), t0
+
+# %%
+def trapezoid(t, t_peak, t_plateau, y_start, y_peak, y_plateau):
+    """
+    Continuous piecewise-linear rise-fall-plateau model in log space:
+    linear rise from (0, y_start) to (t_peak, y_peak), linear fall to
+    (t_plateau, y_plateau), constant afterwards.
+    """
+    y = np.empty_like(t, dtype=float)
+    rise = t <= t_peak
+    fall = (t > t_peak) & (t <= t_plateau)
+    flat = t > t_plateau
+    y[rise] = y_start + (y_peak - y_start) * t[rise] / t_peak
+    y[fall] = y_peak + (y_plateau - y_peak) * (t[fall] - t_peak) / (t_plateau - t_peak)
+    y[flat] = y_plateau
+    return y
+
+# %%
+def fit_trapezoid(camp, weighted=True, n_solutions=1):
+    """
+    Weighted least-squares fit of the rise-fall-plateau model to the
+    campaign medians, from multiple starting points.
+
+    The fit has two nearly-degenerate solutions, differing in whether the
+    deep 2010-11 minimum is treated as part of the decline or the plateau.
+    With n_solutions=2, both are returned (best first).
+
+    Args:
+        camp (pd.DataFrame): Campaign summary from spicav_campaigns().
+        weighted (bool): Weight campaigns by 1/sem^2 if True, equally if False.
+        n_solutions (int): 1 for the best fit, 2 to also return the
+            alternative local minimum.
+
+    Returns:
+        list of (float, np.ndarray): (cost, params) per solution, where
+            params = (t_peak, t_plateau, y_start, y_peak, y_plateau).
+    """
+    t = camp['t'].values
+    y = camp['log'].values
+    w = 1.0 / camp['sem'].values**2 if weighted else np.ones_like(y)
+    t_end = t[-1]
+
+    def cost(p):
+        t_peak, t_plateau, y_start, y_peak, y_plateau = p
+        if not (30 < t_peak < t_plateau < t_end) or y_peak <= y_start:
+            return 1e12
+        return np.sum(w * (y - trapezoid(t, *p))**2)
+
+    sols = []
+    for tp0 in [150, 263, 400]:
+        for tpl0 in [700, 900, 1200, 1600, 2200]:
+            p0 = [tp0, tpl0, np.min(y[:5]), np.max(y), np.median(y[t > tpl0])]
+            res = minimize(cost, p0, method='Nelder-Mead',
+                           options={'maxiter': 50000, 'xatol': 0.5,
+                                    'fatol': 1e-10})
+            sols.append((res.fun, res.x))
+    sols.sort(key=lambda s: s[0])
+
+    best = [sols[0]]
+    if n_solutions > 1:
+        for fun, x in sols[1:]:
+            if abs(x[1] - best[0][1][1]) > 200:
+                best.append((fun, x))
+                break
+    return best
 # %%

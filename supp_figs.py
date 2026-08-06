@@ -317,3 +317,88 @@ def fig_orbit_path(ds, orbit_idx,
     plt.show()
 
 # %%
+# %%
+def fig0_sensitivity(ds, save=False, savepath=None,
+                     savename='fig0_sensitivity.pdf'):
+    """
+    Supplementary figure: sensitivity of the Figure 0 rise-fall-plateau fit.
+
+    Four panels, each showing the campaign medians and the fit:
+      a) campaign gap > 14 d
+      b) campaign gap > 21 d (nominal, as in Figure 0)
+      c) campaign gap > 30 d
+      d) campaign gap > 21 d, fit unweighted
+
+    The fit has two nearly-degenerate solutions, differing in whether the
+    deep 2010-11 minimum is part of the decline or of the plateau. Each
+    panel shows the better-fitting solution as a solid line and the
+    alternative as a dashed line, with both fall durations in the title.
+
+    Args:
+        ds (xr.Dataset): SPICAV observations dataset with dims
+            (start_date, latitude, longitude).
+        save (bool): Save the figure if True.
+        savepath (str): Directory to save.
+        savename (str): Filename for saved figure.
+    """
+    from tools import spicav_campaigns, trapezoid, fit_trapezoid
+
+    plt.rcParams.update(STYLE)
+
+    configs = [
+        ('a', 'campaign gap > 14 d', 14, True),
+        ('b', 'campaign gap > 21 d (nominal)', 21, True),
+        ('c', 'campaign gap > 30 d', 30, True),
+        ('d', 'gap > 21 d, unweighted', 21, False),
+    ]
+
+    fig, axes = plt.subplots(2, 2, figsize=(TWO_COL, 5.2),
+                             sharex=True, sharey=True)
+
+    for ax, (letter, label, gap, weighted) in zip(axes.flat, configs):
+        camp, t0 = spicav_campaigns(ds, gap)
+        sols = fit_trapezoid(camp, weighted, n_solutions=2)
+
+        t_line = np.linspace(0, camp['t'].values[-1], 500)
+        dates_line = t0 + pd.to_timedelta(t_line, unit='D')
+
+        ax.vlines(camp['date'], 10 ** camp['lo'], 10 ** camp['hi'],
+                  color='k', linewidth=0.5, zorder=3)
+        ax.plot(camp['date'], 10 ** camp['log'], 'o',
+                markerfacecolor='firebrick', markeredgecolor='k',
+                markersize=2.5, markeredgewidth=0.3, linestyle='none',
+                zorder=4)
+
+        styles = [dict(color='k', linewidth=1.3, linestyle='-'),
+                  dict(color='grey', linewidth=1.1, linestyle='--')]
+        falls = []
+        for (fun, p), st in zip(sols, styles):
+            ax.plot(dates_line, 10 ** trapezoid(t_line, *p), zorder=5, **st)
+            falls.append(p[1] - p[0])
+
+        rise = sols[0][1][0]
+        numbers = f'rise $\\leq$ {rise:.0f} d, fall {falls[0]:.0f} d'
+        if len(falls) > 1:
+            numbers += f' (alt. {falls[1]:.0f} d)'
+        ax.set_title(f'{letter}) {label}\n{numbers}', loc='left', pad=2)
+
+        ax.set_yscale('log')
+        ax.spines['top'].set_visible(True)
+        ax.spines['right'].set_visible(True)
+        loc = mdates.AutoDateLocator(minticks=4, maxticks=6)
+        ax.xaxis.set_major_locator(loc)
+        ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))
+
+    for ax in axes[:, 0]:
+        ax.set_ylabel('SO$_2$ vmr (ppbv)')
+    for ax in axes[1, :]:
+        ax.set_xlabel('Date')
+
+    fig.tight_layout()
+
+    if save:
+        fig.savefig(savepath + savename, bbox_inches='tight')
+
+    plt.show()
+
+# %%

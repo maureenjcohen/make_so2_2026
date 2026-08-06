@@ -6,63 +6,57 @@ Publication figures for 'Decadal sulphur dioxide variability on Venus is not cau
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
-import matplotlib.ticker as mticker
 import matplotlib.transforms as transforms
 import pandas as pd
 from fig1 import STYLE, TWO_COL
+from tools import spicav_campaigns, trapezoid, fit_trapezoid
 
 # %%
-def figure0(ds, rolling_window=240, start=0, end=None,
-            peak_search_before=None, trough_threshold=None, slope_offset=0,
+def figure0(ds, gap_days=21, weighted=True,
             save=False, savepath=None, savename='figure0.pdf'):
     """
     Figure 0: SPICAV SO2 time series establishing decadal variability.
 
-    Top row: full lat-weighted SPICAV time series with error bars and a
-    cubic spline connecting the observations. Bottom row: rolling mean
-    with standard error envelope.
+    Top row: full lat-weighted SPICAV time series with error bars.
+    Bottom row: one point per observing campaign (median of log10 SO2,
+    with the 16th-84th percentile spread as the error bar) and a
+    weighted piecewise-linear rise-fall-plateau fit in log space.
+    The rise and fall durations are the fitted breakpoints, annotated
+    with arrows; the rise is an upper limit because the record starts
+    mid-rise.
 
     Args:
         ds (xr.Dataset): SPICAV observations dataset with dims
             (start_date, latitude, longitude).
-        rolling_window (int): Rolling mean window in days.
-        start (int): Start index into ds.start_date.
-        end (int): End index into ds.start_date. Defaults to all observations.
-        peak_search_before (str): If given (e.g. '2008-01-01'), draws a slope
-            line from the first valid rolling-mean point to the peak before
-            this date, annotated with the duration.
-        trough_threshold (float): If given, draws a second slope line from the
-            peak to the first point after the peak where the rolling mean falls
-            below this value (ppbv), annotated with the duration.
-        slope_offset (float): Subtract this value (ppbv) from both slope lines
-            so they don't sit on top of the data points.
+        gap_days (int): Campaign-splitting gap in days.
+        weighted (bool): Weight the fit by the campaign medians' standard
+            errors if True.
         save (bool): Save the figure if True.
         savepath (str): Directory to save.
         savename (str): Filename for saved figure.
+
+    Returns:
+        dict: Fitted rise/fall durations, breakpoint dates, and levels.
     """
     plt.rcParams.update(STYLE)
 
-    ds_sl     = ds.isel(start_date=slice(start, end))
-    obs_dates = pd.to_datetime(ds_sl.start_date.values)
-
-    # Lat-weighted mean SO2 and absolute error
-    w        = np.cos(np.deg2rad(ds_sl.latitude))
-    so2_obs  = ds_sl.so2_ppbv.weighted(w).mean(dim=['latitude', 'longitude'])
-    err_mean = ds_sl.rel_error_pct.mean(dim=['latitude', 'longitude'])
+    obs_dates = pd.to_datetime(ds.start_date.values)
+    w        = np.cos(np.deg2rad(ds.latitude))
+    so2_obs  = ds.so2_ppbv.weighted(w).mean(dim=['latitude', 'longitude'])
+    err_mean = ds.rel_error_pct.mean(dim=['latitude', 'longitude'])
     err_abs  = (err_mean * so2_obs) / 100.0
 
-    so2_vals = so2_obs.values
-    err_vals = err_abs.values
+    camp, t0 = spicav_campaigns(ds, gap_days)
+    (cost_val, p), = fit_trapezoid(camp, weighted, n_solutions=1)
+    t_peak, t_plateau, y_start, y_peak, y_plateau = p
 
-    # Rolling mean and standard error, point-based window (xarray)
-    smoothed     = so2_obs.rolling(start_date=rolling_window, center=True,
-                                   min_periods=rolling_window // 4).mean()
-    roll         = so2_obs.rolling(start_date=rolling_window, center=True,
-                                   min_periods=rolling_window // 4)
-    smoothed_err = roll.std() / np.sqrt(roll.count())
+    peak_date    = t0 + pd.Timedelta(days=t_peak)
+    plateau_date = t0 + pd.Timedelta(days=t_plateau)
+    rise_days    = int(round(t_peak))
+    fall_days    = int(round(t_plateau - t_peak))
 
-    smoothed_vals     = smoothed.values.astype(float)
-    smoothed_err_vals = smoothed_err.values.astype(float)
+    t_line = np.linspace(0, camp['t'].values[-1], 500)
+    dates_line = t0 + pd.to_timedelta(t_line, unit='D')
 
     # --- Layout ---
     fig = plt.figure(figsize=(TWO_COL, 5.5))
@@ -70,105 +64,78 @@ def figure0(ds, rolling_window=240, start=0, end=None,
     ax_top = fig.add_subplot(gs[0])
     ax_bot = fig.add_subplot(gs[1])
 
-    # --- Top: scatter + spline connecting the dots ---
-    ax_top.errorbar(obs_dates, so2_vals, yerr=err_vals,
+    # --- Top: every observation ---
+    ax_top.errorbar(obs_dates, so2_obs.values, yerr=err_abs.values,
                     fmt='o', markerfacecolor='firebrick', markeredgecolor='k',
                     markersize=3, markeredgewidth=0.4,
                     ecolor='k', linewidth=0.6, capsize=2, capthick=0.8,
                     zorder=3, label='SPICAV')
-    ax_top.plot(obs_dates, so2_vals, color='grey', linestyle='--', linewidth=1.0)
-
+    ax_top.plot(obs_dates, so2_obs.values, color='grey', linestyle='--',
+                linewidth=1.0, zorder=2)
     ax_top.set_yscale('log')
     ax_top.set_ylabel('SO$_2$ vmr (ppbv)')
-    ax_top.set_title('a) SPICAV SO$_2$ observations, latitude-weighted mean', loc='left', pad=2)
-    ax_top.spines['top'].set_visible(True)
-    ax_top.spines['right'].set_visible(True)
+    ax_top.set_title('a) SPICAV SO$_2$ observations, latitude-weighted mean',
+                     loc='left', pad=2)
 
-    locator = mdates.AutoDateLocator(minticks=5, maxticks=9)
-    ax_top.xaxis.set_major_locator(locator)
-    ax_top.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator))
-    ax_top.xaxis.set_minor_locator(mdates.MonthLocator())
+    # --- Bottom: campaign medians and the fit ---
+    ax_bot.vlines(camp['date'], 10 ** camp['lo'], 10 ** camp['hi'],
+                  color='k', linewidth=0.6, zorder=3)
+    ax_bot.plot(camp['date'], 10 ** camp['log'], 'o',
+                markerfacecolor='firebrick', markeredgecolor='k',
+                markersize=3, markeredgewidth=0.4, linestyle='none', zorder=4)
+    ax_bot.plot(dates_line, 10 ** trapezoid(t_line, *p),
+                color='k', linewidth=1.4, zorder=5)
 
-    # --- Bottom: rolling mean with error bars ---
-    ax_bot.errorbar(obs_dates, smoothed_vals, yerr=smoothed_err_vals,
-                    fmt='o', markerfacecolor='firebrick', markeredgecolor='k',
-                    markersize=3, markeredgewidth=0.4, linestyle='none',
-                    ecolor='k', linewidth=1.0, capsize=2, capthick=0.8)
-
+    ax_bot.set_yscale('log')
     ax_bot.set_ylabel('SO$_2$ vmr (ppbv)')
     ax_bot.set_xlabel('Date')
-    ax_bot.set_title(f'b) {rolling_window}-point rolling mean', loc='left', pad=2)
-    ax_bot.spines['top'].set_visible(True)
-    ax_bot.spines['right'].set_visible(True)
+    ax_bot.set_title('b) Campaign medians with rise-fall-plateau fit',
+                     loc='left', pad=2)
 
-    locator2 = mdates.AutoDateLocator(minticks=5, maxticks=9)
-    ax_bot.xaxis.set_major_locator(locator2)
-    ax_bot.xaxis.set_major_formatter(mdates.ConciseDateFormatter(locator2))
-    ax_bot.xaxis.set_minor_locator(mdates.MonthLocator())
+    # --- Rise and fall arrows ---
+    trans = transforms.blended_transform_factory(ax_bot.transData,
+                                                 ax_bot.transAxes)
+    mid_rise = t0 + (peak_date - t0) / 2
+    ax_bot.annotate('', xy=(mdates.date2num(peak_date), 0.93),
+                    xytext=(mdates.date2num(t0), 0.93),
+                    xycoords=trans, textcoords=trans,
+                    arrowprops=dict(arrowstyle='<->', color='k', lw=0.8))
+    ax_bot.text(mdates.date2num(mid_rise), 0.88, f'$\\leq$ {rise_days}\ndays',
+                transform=trans, ha='center', va='top', fontsize=8,
+                fontweight='bold')
 
-    # --- Rising slope annotation on subplot b) ---
-    if peak_search_before is not None:
-        valid_mask  = ~np.isnan(smoothed_vals)
-        first_valid = np.where(valid_mask)[0][0]
+    mid_fall = peak_date + (plateau_date - peak_date) / 2
+    ax_bot.annotate('', xy=(mdates.date2num(plateau_date), 0.08),
+                    xytext=(mdates.date2num(peak_date), 0.08),
+                    xycoords=trans, textcoords=trans,
+                    arrowprops=dict(arrowstyle='<->', color='k', lw=0.8))
+    ax_bot.text(mdates.date2num(mid_fall), 0.13, f'{fall_days} days',
+                transform=trans, ha='center', va='bottom', fontsize=8,
+                fontweight='bold')
 
-        before_mask = obs_dates < pd.Timestamp(peak_search_before)
-        search_mask = valid_mask & before_mask
-        peak_idx    = np.where(search_mask)[0][np.argmax(smoothed_vals[search_mask])]
-
-        start_ann = obs_dates[first_valid]
-        peak_ann  = obs_dates[peak_idx]
-        duration  = (peak_ann - start_ann).days
-        mid_ann   = start_ann + (peak_ann - start_ann) / 2
-
-        trans = transforms.blended_transform_factory(ax_bot.transData, ax_bot.transAxes)
-
-        # Rising slope line, offset downward
-        ax_bot.plot([start_ann, peak_ann],
-                    [smoothed_vals[first_valid] - slope_offset,
-                     smoothed_vals[peak_idx]    - slope_offset],
-                    color='grey', linewidth=1.0, linestyle='--', alpha=0.6, zorder=5)
-
-        # Double-headed arrow + duration label for the rise (placed above the curve)
-        rise_shift = 30  # days left
-        ax_bot.annotate('', xy=(mdates.date2num(peak_ann) - rise_shift, 0.93),
-                        xytext=(mdates.date2num(start_ann) - rise_shift, 0.93),
-                        xycoords=trans, textcoords=trans,
-                        arrowprops=dict(arrowstyle='<->', color='k', lw=0.8))
-        ax_bot.text(mdates.date2num(mid_ann) - rise_shift, 0.88,
-                    f'{duration}\ndays',
-                    transform=trans, ha='center', va='top', fontsize=8,
-                    fontweight='bold')
-
-        # --- Declining slope: peak to first crossing below trough_threshold ---
-        if trough_threshold is not None:
-            after_peak   = np.where(valid_mask & (np.arange(len(smoothed_vals)) > peak_idx))[0]
-            below_thresh = after_peak[smoothed_vals[after_peak] < trough_threshold]
-
-            if len(below_thresh) > 0:
-                trough_idx  = below_thresh[0]
-                trough_ann  = obs_dates[trough_idx]
-                duration_dt = (trough_ann - peak_ann).days
-                mid_dt      = peak_ann + (trough_ann - peak_ann) / 2
-
-                # Declining slope line, offset downward
-                ax_bot.plot([peak_ann, trough_ann],
-                            [smoothed_vals[peak_idx]   - slope_offset,
-                             smoothed_vals[trough_idx] - slope_offset],
-                            color='grey', linewidth=1.0, linestyle='--', alpha=0.6, zorder=5)
-
-                # Double-headed arrow + duration label for the decline
-                ax_bot.annotate('', xy=(mdates.date2num(trough_ann), 0.08),
-                                xytext=(mdates.date2num(peak_ann), 0.08),
-                                xycoords=trans, textcoords=trans,
-                                arrowprops=dict(arrowstyle='<->', color='k', lw=0.8))
-                ax_bot.text(mdates.date2num(mid_dt) - 200, 0.13,
-                            f'{duration_dt} days',
-                            transform=trans, ha='center', va='bottom', fontsize=8,
-                            fontweight='bold')
+    for ax in (ax_top, ax_bot):
+        ax.spines['top'].set_visible(True)
+        ax.spines['right'].set_visible(True)
+        loc = mdates.AutoDateLocator(minticks=5, maxticks=9)
+        ax.xaxis.set_major_locator(loc)
+        ax.xaxis.set_major_formatter(mdates.ConciseDateFormatter(loc))
+        ax.xaxis.set_minor_locator(mdates.MonthLocator())
+        ax.set_xlim(t0 - pd.Timedelta(days=90),
+                    obs_dates[-1] + pd.Timedelta(days=90))
 
     if save:
         fig.savefig(savepath + savename)
 
     plt.show()
+
+    return {
+        'rise_days':    rise_days,
+        'fall_days':    fall_days,
+        'peak_date':    peak_date,
+        'plateau_date': plateau_date,
+        'start_ppbv':   10 ** y_start,
+        'peak_ppbv':    10 ** y_peak,
+        'plateau_ppbv': 10 ** y_plateau,
+    }
 
 # %%

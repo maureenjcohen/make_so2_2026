@@ -3,17 +3,7 @@ Plotting functions for 'Decadal sulphur dioxide variability on Venus not caused 
 (Cohen et al. 2027).
 """
 # %% Filepaths
-eqday_plume = '/exomars/data/internal/working/mc5526/VPCM_decadal/Xins_eq_day.nc'
-eqnight_plume = '/exomars/data/internal/working/mc5526/VPCM_decadal/Xins_eq_night.nc'
-so2_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/so2_plume_96x96x78/Xins_so2.nc'
-so2_plume_big = '/exomars/projects/mc5526/VPCM_decadal_so2/so2_plume_96x96x78/Xins_so2_big.nc'
-chem_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/so2_plume_96x96x78/Xins_chem.nc'
-hotspot2_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/hotspot_96x96x50/Xins_hotspot2.nc'
-hotspot1_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/hotspot_96x96x50/Xins_hotspot1.nc'
-pillar_plume = '/exomars/projects/mc5526/VPCM_decadal_so2/hotspot_96x96x50/Xins_pillar.nc'
-retrievals = '/exomars/projects/mc5526/VPCM_decadal_so2/netcdfs/SO2_lons.nc'
-savedir = '/exomars/projects/mc5526/VPCM_decadal_so2/scratch_plots/'
-filetype = 'png'
+from config import *
 
 # %%
 # Import packages
@@ -27,12 +17,13 @@ import matplotlib.animation as animation
 from classes import PlumeSim
 from plotting_functions import dispersal_time, dispersal_map, animate_chem_plume, summ_stats, time_series
 from plotting_functions import data_compare, sensitivity_test, marcq_reproduce
-from fig1 import figure1, STYLE
-from fig2 import figure2 
-from fig3 import figure3 
 from fig0 import figure0
+from fig1 import figure1, STYLE
+from fig2 import figure2
+from fig3 import figure3
 from tools import venusdict, plume_dict_master, calculate_so2_mass, name_dict, source_dispersal_time, mass_flux
 from supp_figs import fig_so2_prof, fig_temp_profile, fig_logistic, fig_orbit_summary, fig_orbit_path
+from supp_figs import fig0_sensitivity
 from animations import anim1, anim2, anim3
 
 
@@ -44,12 +35,15 @@ if __name__ == "__main__":
     ds_retrievals = xr.open_dataset(retrievals)
 
     # %%
-    figure0(ds_retrievals, rolling_window=60, 
-            peak_search_before='2008-01-01', trough_threshold=20, 
-            save=True, savepath=savedir, savename='fig0_ref_20.' + filetype)
+    figure0(ds_retrievals, gap_days=21, weighted=True,
+            save=True, savepath=savedir, savename='fig0_campaign_fit.' + filetype)
     # %%
     fig_orbit_summary(ds_retrievals, orbit_idx=(41, 50, 60),
-                      save=True, savepath=savedir, savename='figS_orbit_summary.' + filetype)
+                      save=True, savepath=savedir, savename='figS1_orbit_summary.' + filetype)
+
+    # %%
+    fig0_sensitivity(ds_retrievals, save=True, savepath=savedir,
+                     savename='figS2_fig0_sensitivity.' + filetype)
 
     # %%
     # Create PlumeSim object and load data for plume run
@@ -149,24 +143,24 @@ if __name__ == "__main__":
 
     # %%
     fig_so2_prof(so2, times=[0, 1000, 2000, 3000, 4000, 5000],
-                 save=True, savepath=savedir, savename='figS_so2_prof.' + filetype)
+                 save=True, savepath=savedir, savename='figS3_so2_prof.' + filetype)
 
     # %%
     fig_temp_profile(hotspot2, ylim_bottom=20, ylim_top=35,
                      t=hotspot2.plumes['start_time']+6, save=True, savepath=savedir, 
-                     savename='figS_temp_profile_hotspot2.' + filetype)
+                     savename='figS4_temp_profile_hotspot2.' + filetype)
     
     # %%
     fig_temp_profile(hotspot1, ylim_bottom=20, ylim_top=35,
                     t=hotspot1.plumes['start_time']+6, save=True, savepath=savedir, 
-                    savename='figS_temp_profile_hotspot1.' + filetype)
+                    savename='figS5_temp_profile_hotspot1.' + filetype)
     # %%
     fig_temp_profile(pillar, ylim_bottom=20, ylim_top=35,
                     t=pillar.plumes['start_time']+6, save=True, savepath=savedir, 
-                    savename='figS_temp_profile_pillar.' + filetype)
+                    savename='figS6_temp_profile_pillar.' + filetype)
 
     # %%
-    fig_logistic(pillar, save=True, savepath=savedir, savename='figS_logistic.' + filetype)
+    fig_logistic(pillar, save=True, savepath=savedir, savename='figS7_logistic.' + filetype)
 
     # %%
     anim1(so2, t_start=plume_dict_master['so2']['start_time'],
