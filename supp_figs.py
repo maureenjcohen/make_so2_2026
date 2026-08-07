@@ -9,9 +9,10 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.dates as mdates
 import matplotlib.ticker as mticker
+from scipy.optimize import minimize
 
 from fig1 import STYLE, TWO_COL, ONE_COL, ONE_HALF_COL
-from tools import logistic_decay
+from tools import logistic_decay, spicav_campaigns, trapezoid, fit_trapezoid
 
 # %%
 def fig_so2_prof(sim, times=None, t_start=None, t_end=None,
@@ -316,7 +317,7 @@ def fig_orbit_path(ds, orbit_idx,
 
     plt.show()
 
-# %%
+
 # %%
 def fig0_sensitivity(ds, save=False, savepath=None,
                      savename='fig0_sensitivity.pdf'):
@@ -341,7 +342,6 @@ def fig0_sensitivity(ds, save=False, savepath=None,
         savepath (str): Directory to save.
         savename (str): Filename for saved figure.
     """
-    from tools import spicav_campaigns, trapezoid, fit_trapezoid
 
     plt.rcParams.update(STYLE)
 
