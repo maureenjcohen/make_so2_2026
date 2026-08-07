@@ -70,8 +70,8 @@ def figure0(ds, gap_days=21, weighted=True,
                     markersize=3, markeredgewidth=0.4,
                     ecolor='k', linewidth=0.6, capsize=2, capthick=0.8,
                     zorder=3, label='SPICAV')
-    ax_top.plot(obs_dates, so2_obs.values, color='grey', linestyle='--',
-                linewidth=1.0, zorder=2)
+   # ax_top.plot(obs_dates, so2_obs.values, color='grey', linestyle='--',
+   #             linewidth=1.0, zorder=2)
     ax_top.set_yscale('log')
     ax_top.set_ylabel('SO$_2$ vmr (ppbv)')
     ax_top.set_title('a) SPICAV SO$_2$ observations, latitude-weighted mean',
@@ -84,7 +84,7 @@ def figure0(ds, gap_days=21, weighted=True,
                 markerfacecolor='firebrick', markeredgecolor='k',
                 markersize=3, markeredgewidth=0.4, linestyle='none', zorder=4)
     ax_bot.plot(dates_line, 10 ** trapezoid(t_line, *p),
-                color='k', linewidth=1.4, zorder=5)
+                color='k', linewidth=1.4, linestyle='dashed', zorder=5)
 
     ax_bot.set_yscale('log')
     ax_bot.set_ylabel('SO$_2$ vmr (ppbv)')
