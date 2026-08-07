@@ -333,8 +333,6 @@ def spicav_max_so2(ds):
     return result
 
 # %%
-
-# %%
 def spicav_campaigns(ds, gap_days=21):
     """
     Group the SPICAV observations into observing campaigns.
@@ -366,19 +364,21 @@ def spicav_campaigns(ds, gap_days=21):
     y  = np.log10(df['so2'].values)
 
     label = np.concatenate([[0], np.cumsum(np.diff(t) > gap_days)])
+    prior_sig = np.median(np.abs(y - np.median(y))) # Typical spread of data
 
     rows = []
     for k in range(label.max() + 1):
         m  = label == k
         yk = y[m]
-        sig = (np.percentile(yk, 84) - np.percentile(yk, 16)) / 2
+        obs_sig = (np.percentile(yk, 84) - np.percentile(yk, 16)) / 2
+        sig = np.sqrt(obs_sig**2 + prior_sig**2)
         rows.append({
             'date': t0 + pd.Timedelta(days=float(t[m].mean())),
             't':    t[m].mean(),
             'log':  np.median(yk),
             'lo':   np.percentile(yk, 16),
             'hi':   np.percentile(yk, 84),
-            'sem':  max(1.25 * sig / np.sqrt(m.sum()), 0.05),
+            'sem':  1.25 * sig / np.sqrt(m.sum()),
             'n':    int(m.sum()),
         })
     return pd.DataFrame(rows), t0
