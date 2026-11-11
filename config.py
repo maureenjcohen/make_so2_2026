@@ -19,3 +19,6 @@ retrievals = os.getenv('RETRIEVALS')
 # %% Output
 savedir = os.getenv('SAVEDIR')
 filetype = os.getenv('FILETYPE', 'png')
+
+# %% Open data repository extracts
+data_out = os.getenv('DATA_OUT')
