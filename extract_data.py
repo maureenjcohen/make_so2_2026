@@ -72,7 +72,7 @@ def extract_run(key, run, outdir, half_width=HALF_WIDTH, time_block=TIME_BLOCK):
         str: Path of the written file.
     """
     lev = plume_dict_master[key]['lev']
-    lev_lo, lev_hi = run.get('levels'), (lev - half_width, lev + half_width)
+    lev_lo, lev_hi = run.get('levels', (lev - half_width, lev + half_width))
 
     ds = xr.open_dataset(run['path'], decode_cf=False)
     nlev = ds.sizes[LEV_DIM]
