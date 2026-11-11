@@ -30,7 +30,7 @@ RUNS = {
     'so2':      {'path': so2_plume,      'vars': ['so2'],
                  'outname': 'vpcm_so2_plume'},
     'hotspot2': {'path': hotspot2_plume, 'vars': ['temp', 'vitu', 'vitv', 'vitwz'],
-                 'outname': 'vpcm_hotspot'},
+                 'outname': 'vpcm_hotspot', 'levels': (22,35), 'ntime': 1600},
     'h2o':      {'path': chem_plume,     'vars': ['h2o'],
                  'outname': 'vpcm_h2o_plume'},
 }
@@ -72,7 +72,7 @@ def extract_run(key, run, outdir, half_width=HALF_WIDTH, time_block=TIME_BLOCK):
         str: Path of the written file.
     """
     lev = plume_dict_master[key]['lev']
-    lev_lo, lev_hi = lev - half_width, lev + half_width
+    lev_lo, lev_hi = run.get('levels'), (lev - half_width, lev + half_width)
 
     ds = xr.open_dataset(run['path'], decode_cf=False)
     nlev = ds.sizes[LEV_DIM]
@@ -80,10 +80,12 @@ def extract_run(key, run, outdir, half_width=HALF_WIDTH, time_block=TIME_BLOCK):
         raise ValueError(f'Levels {lev_lo}-{lev_hi} outside 0-{nlev - 1} for {key}')
 
     keep = run['vars'] + ancillary_vars(ds, run['vars'])
-    out = ds[keep].isel({LEV_DIM: slice(lev_lo, lev_hi + 1)})
+    out = ds[keep].isel({LEV_DIM: slice(lev_lo, lev_hi + 1),
+                         TIME_DIM: slice(0, run.get('ntime'))})
     out.attrs['extract_description'] = (
         f'Model levels {lev_lo}-{lev_hi} (0-based indices into the original '
-        f'{nlev}-level {LEV_DIM} axis), centred on the injection level {lev}. '
+        f'{nlev}-level {LEV_DIM} axis); the injection level is {lev}. '
+        f'First {out.sizes[TIME_DIM]} of {ds.sizes[TIME_DIM]} output times. '
         f'Values are unmodified model output.')
     out.attrs['injection_level_index'] = lev
     out.attrs['injection_lat_index'] = plume_dict_master[key]['lat_idx']
